@@ -10,14 +10,29 @@ Uso: uv run python -m deploy.render_env
 import secrets
 from pathlib import Path
 
-from deploy.deploy_space import DeploySettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class DeploySettings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    gemini_api_key: str
+    database_url: str
+    whatsapp_token: str
+    whatsapp_phone_number_id: str
+    whatsapp_verify_token: str
+    whatsapp_app_secret: str
+    whatsapp_graph_version: str = "v25.0"
+    whatsapp_demo_customer_phone: str = "56989910085"
+    chat_model: str = "gemini-3.5-flash-lite"
+    fallback_chat_model: str = "gemini-3.1-flash-lite"
+
 
 PORT = 8080  # se fija explícitamente: Render usa 10000 por defecto y COMMERCE_API_URL debe apuntar al mismo puerto
 OUTPUT = Path(__file__).resolve().parent.parent / ".env.render"
 
 
 def build_env() -> dict[str, str]:
-    settings = DeploySettings(hf_token="no-aplica")
+    settings = DeploySettings()
     return {
         "PORT": str(PORT),
         "APP_MODULE": "server:app",

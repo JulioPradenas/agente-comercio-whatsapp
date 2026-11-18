@@ -3,9 +3,10 @@
 Agente conversacional para una tienda online de electro y hogar: busca productos, genera el link de compra,
 informa el estado de pedidos, gestiona devoluciones y deriva a un humano cuando corresponde.
 
-> En construcción. Avance actual: datos sintéticos del comercio.
+> En producción en Render: el agente responde por WhatsApp (número de prueba de Meta).
+> Pendiente: guardrails, evaluación completa en CI y dashboard de KPIs.
 
-## Stack previsto
+## Stack
 
 | Capa | Tecnología |
 |---|---|
@@ -13,7 +14,7 @@ informa el estado de pedidos, gestiona devoluciones y deriva a un humano cuando 
 | Orquestación | LangGraph (router + subagentes + derivación humana) |
 | RAG | Postgres + pgvector (Supabase) |
 | Canal | WhatsApp Cloud API |
-| Backend | FastAPI en Cloud Run |
+| Backend | FastAPI en Render (Docker; mismo contenedor desplegable en Cloud Run) |
 | Comercio | API simulada con la forma de los endpoints de VTEX |
 | Calidad | Golden set + LLM-as-judge en CI, guardrails de entrada/salida |
 | Analítica | BigQuery + Looker Studio (resolución, conversión, ticket promedio, costo por conversación) |
@@ -93,6 +94,25 @@ en pausa para ese cliente hasta que el ejecutivo cierra el caso.
 ```bash
 uv run python -m evals.router_eval   # exactitud del router sobre evals/golden_set.jsonl (30 casos)
 ```
+
+## Despliegue (Render, plan gratuito)
+
+Un solo servicio Docker (`server.py`) con el webhook y la API de comercio montada en `/commerce`.
+La memoria del agente vive en Postgres (`PostgresSaver`), así que sobrevive a que Render suspenda la instancia.
+
+```bash
+uv run python -m deploy.render_env   # genera .env.render (gitignored) para pegar en Render > Environment
+```
+
+| Ajuste en Render | Valor |
+|---|---|
+| Runtime | Docker |
+| Instance type | Free (se suspende tras ~15 min sin tráfico; el primer mensaje tarda ~1 min) |
+| Health check | `/health` |
+| Callback URL en Meta | `https://<servicio>.onrender.com/webhook` |
+
+Las credenciales de la API de comercio se generan aleatorias en cada despliegue: en producción `/commerce` es público
+y las credenciales de desarrollo están en este repositorio.
 
 ## Canal WhatsApp (Cloud API)
 
