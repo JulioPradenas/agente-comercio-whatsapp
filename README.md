@@ -59,6 +59,26 @@ Políticas divididas por sección (22 chunks) y descripciones de productos, con 
 a 768 dimensiones e índice HNSW. Evaluación inicial de recuperación (16 preguntas):
 hit@1 = 0,88 · hit@4 = 1,00 · MRR = 0,93.
 
+## Agente (LangGraph + Gemini)
+
+```bash
+uv run fastapi dev commerce_api/main.py --port 8001   # en otra terminal
+uv run python -m agent.cli                # conversación de ejemplo
+uv run python -m agent.cli --interactive  # conversar
+```
+
+Un router clasifica la intención con salida estructurada y deriva a un subagente con su propio prompt
+y solo sus herramientas ([diagrama](docs/agent_graph.md)):
+
+| Subagente | Herramientas |
+|---|---|
+| Ventas | `search_products`, `check_stock`, `add_to_cart`, `search_policies` |
+| Postventa | `list_my_orders`, `get_order_status`, `request_return`, `search_policies` |
+| FAQ | `search_policies` |
+
+El teléfono del cliente viene de la sesión y nunca es un parámetro que el LLM pueda elegir.
+Modelo principal y de respaldo configurables (`CHAT_MODEL`, `FALLBACK_CHAT_MODEL`), con timeout.
+
 ## API de comercio (VTEX-like)
 
 ```bash
