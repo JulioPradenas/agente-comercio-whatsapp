@@ -36,6 +36,18 @@ uv run python data/generate_orders.py
 uv run python data/validate.py
 ```
 
+### Base de datos (Supabase / Postgres)
+
+```bash
+cp .env.example .env                      # completar DATABASE_URL y GEMINI_API_KEY
+uv run python scripts/check_connections.py
+uv run python -m db.migrate                # aplica db/migrations/*.sql pendientes
+uv run python -m db.load_data              # carga los CSV con COPY (reemplaza el contenido)
+```
+
+Las restricciones del esquema (CHECK, llaves foráneas, UNIQUE) replican las reglas de `data/validate.py`
+y RLS está activo en todas las tablas para que la API REST pública de Supabase no exponga datos.
+
 ## API de comercio (VTEX-like)
 
 ```bash
