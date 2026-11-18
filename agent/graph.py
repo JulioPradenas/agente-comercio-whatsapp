@@ -66,7 +66,7 @@ def build_graph(checkpointer=None):
     graph.add_edge("paused", END)
 
     # El checkpointer guarda el estado después de cada turno, por thread_id.
-    # InMemorySaver se pierde al reiniciar; al desplegar se cambia por PostgresSaver (Supabase).
+    # InMemorySaver (por defecto) sirve para la CLI y los tests; en producción se pasa PostgresSaver.
     return graph.compile(checkpointer=checkpointer or InMemorySaver())
 
 

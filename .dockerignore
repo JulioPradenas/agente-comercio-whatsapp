@@ -1,0 +1,11 @@
+# Nunca dentro de la imagen: secretos y artefactos locales.
+.env
+.venv
+.git
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+evals/
+postman/
+docs/

@@ -143,9 +143,10 @@ def create_app(agent: AgentFn, whatsapp: WhatsAppClient, settings: WhatsAppSetti
 
 
 def build_production_app() -> FastAPI:
+    from agent.checkpointer import get_postgres_checkpointer
     from agent.graph import build_graph, respond
 
-    graph = build_graph()
+    graph = build_graph(checkpointer=get_postgres_checkpointer())
     settings = WhatsAppSettings()
     return create_app(agent=lambda phone, text: respond(graph, phone, text), whatsapp=WhatsAppClient(settings), settings=settings)
 
