@@ -8,6 +8,7 @@ Uso local: uv run uvicorn channels.whatsapp_webhook:app --port 8000
 
 import hashlib
 import hmac
+import logging
 import threading
 from collections import OrderedDict
 from collections.abc import Callable
@@ -17,6 +18,10 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
 from channels.whatsapp_client import WhatsAppClient, WhatsAppSettings
+
+# Logs propios sin secretos: el access log de uvicorn se desactiva porque escribe la URL completa.
+logger = logging.getLogger("whatsapp")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
 AgentFn = Callable[[str, str], str]  # (teléfono, texto del cliente) -> respuesta ("" si el bot está en pausa)
 UNSUPPORTED_MESSAGE = "Por ahora solo puedo leer mensajes de texto. ¿Me escribes tu consulta?"
@@ -88,17 +93,22 @@ def create_app(agent: AgentFn, whatsapp: WhatsAppClient, settings: WhatsAppSetti
         try:
             whatsapp.mark_as_read(message.message_id)
         except Exception as error:  # que no se marque como leído no debe impedir la respuesta
-            print(f"[whatsapp] no se pudo marcar como leído: {error}")
+            logger.warning("mark_as_read falló para %s: %s", message.message_id, error)
 
         if message.text is None:
             whatsapp.send_text(message.sender, UNSUPPORTED_MESSAGE)
             return
 
         customer_phone = settings.demo_customer_phone or message.sender
-        with lock_for(customer_phone):
-            reply = agent(customer_phone, message.text)
-        if reply:  # "" = bot en pausa: un ejecutivo atiende
-            whatsapp.send_text(message.sender, reply)
+        try:
+            with lock_for(customer_phone):
+                reply = agent(customer_phone, message.text)
+            if reply:  # "" = bot en pausa: un ejecutivo atiende
+                whatsapp.send_text(message.sender, reply)
+            logger.info("respondido %s (%d caracteres)", message.message_id, len(reply))
+        except Exception:
+            # En segundo plano un error no llega a nadie: si no se registra, el cliente simplemente no recibe nada.
+            logger.exception("falló el procesamiento de %s", message.message_id)
 
     @app.get("/webhook", response_class=PlainTextResponse)
     def verify(
@@ -114,10 +124,14 @@ def create_app(agent: AgentFn, whatsapp: WhatsAppClient, settings: WhatsAppSetti
     async def receive(request: Request, background: BackgroundTasks) -> dict:
         raw_body = await request.body()  # la firma se calcula sobre los bytes exactos, no sobre el JSON parseado
         if not valid_signature(raw_body, request.headers.get("X-Hub-Signature-256"), settings.app_secret):
+            logger.warning("POST rechazado: firma inválida o ausente")
             raise HTTPException(status_code=401, detail="Firma inválida")
 
-        for message in parse_messages(await request.json()):
+        messages = parse_messages(await request.json())
+        logger.info("POST recibido: %d mensaje(s)", len(messages))
+        for message in messages:
             if seen.first_time(message.message_id):
+                logger.info("procesando %s (texto=%s)", message.message_id, message.text is not None)
                 background.add_task(handle, message)  # se ejecuta DESPUÉS de responder 200
         return {"status": "received"}
 

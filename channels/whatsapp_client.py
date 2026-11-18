@@ -12,7 +12,7 @@ class WhatsAppSettings(BaseSettings):
     phone_number_id: str = ""  # ID del número que envía (no es el número en sí)
     verify_token: str = ""  # string que inventas tú; Meta lo envía al verificar el webhook
     app_secret: str = ""  # para validar la firma X-Hub-Signature-256
-    graph_version: str = "v23.0"
+    graph_version: str = "v25.0"
     # Demo: tu número real no existe en los datos sintéticos. Si se define, todo mensaje entrante
     # se atiende como este cliente sintético (y tu número real no se guarda en tickets ni estado).
     demo_customer_phone: str = ""

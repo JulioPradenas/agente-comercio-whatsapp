@@ -104,6 +104,20 @@ uv run uvicorn channels.whatsapp_webhook:app --port 8000
 - `POST /webhook`: valida la firma `X-Hub-Signature-256` (HMAC con el App Secret), responde 200 de inmediato
   y procesa en segundo plano; deduplica por `message.id` y procesa en orden los mensajes de un mismo cliente.
 - Si un ejecutivo tiene el caso, el bot no responde. Audios e imágenes reciben un aviso de "solo texto".
+- Logs propios sin secretos (el access log de uvicorn se desactiva con `--no-access-log` porque escribe la URL completa).
+
+Desarrollo local con túnel:
+
+```bash
+uv run uvicorn channels.whatsapp_webhook:app --port 8000 --no-access-log
+cloudflared tunnel --url http://localhost:8000   # Callback URL en Meta: <url>/webhook
+```
+
+Configuración en Meta que suele faltar:
+1. En el formulario del webhook, el **Verify token** es `WHATSAPP_VERIFY_TOKEN`, no el access token.
+2. Suscribir el campo `messages` del webhook.
+3. Suscribir la cuenta de WhatsApp Business a la app (sin esto Meta verifica el webhook pero no envía mensajes):
+   `POST https://graph.facebook.com/v25.0/{WABA_ID}/subscribed_apps` con el access token.
 
 ## API de comercio (VTEX-like)
 
