@@ -7,7 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
     "faker>=40.54.0",
     "fastapi[standard]>=0.165.0",
+    "google-genai>=3.5.0",
     "pandas>=3.1.1",
+    "psycopg[binary]>=3.3.9",
 ]
 
 [dependency-groups]
