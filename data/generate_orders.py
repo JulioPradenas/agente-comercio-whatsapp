@@ -108,7 +108,10 @@ def generate_orders(
             order_total += quantity * product["sale_price"]
 
         shipping_cost = 0 if order_total >= 49_990 else 3_990
-        estimated_delivery = created_at + timedelta(days=int(rng.integers(3, 8)))
+        # 3 a 7 días HÁBILES, como dice data/policies/despacho.md (busday_offset salta sábados y domingos).
+        business_days = int(rng.integers(3, 8))
+        estimated_date = np.busday_offset(np.datetime64(created_at.date()), business_days, roll="forward")
+        estimated_delivery = datetime.combine(estimated_date.astype(object), created_at.time())
         delivered_at = (
             min(estimated_delivery + timedelta(days=int(rng.integers(-1, 3))), REFERENCE_DATE)
             if status == "delivered"

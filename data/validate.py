@@ -5,6 +5,7 @@ Uso: uv run python data/validate.py
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 RAW_DIR = Path(__file__).parent / "raw"
@@ -31,6 +32,15 @@ checks = {
         .reindex(orders["order_id"]).to_numpy() == orders["items_total"].to_numpy()
     ).all(),
     "delivered_at solo en pedidos entregados": (orders["delivered_at"].notna() == (orders["status"] == "delivered")).all(),
+    "despacho según política ($3.990, gratis desde $49.990)": (
+        orders["shipping_cost"] == orders["items_total"].lt(49_990).map({True: 3_990, False: 0})
+    ).all(),
+    "plazo estimado de 3 a 7 días hábiles (política de despacho)": pd.Series(
+        np.busday_count(
+            orders["created_at"].dt.date.to_numpy().astype("datetime64[D]"),
+            pd.to_datetime(orders["estimated_delivery"]).to_numpy().astype("datetime64[D]"),
+        )
+    ).between(3, 7).all(),
     "entrega posterior a la compra": (orders["delivered_at"].dropna() >= orders.loc[orders["delivered_at"].notna(), "created_at"]).all(),
 }
 
