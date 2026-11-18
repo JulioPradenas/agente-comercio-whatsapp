@@ -1,0 +1,16 @@
+{"question": "oye cuanto tiempo tengo pa devolver algo?", "expected_chunk": "devoluciones#derecho-a-retracto-en-compras-online"}
+{"question": "cuánto me sale el envío", "expected_chunk": "despacho#costo-de-despacho"}
+{"question": "en cuántos días me llega lo que compré", "expected_chunk": "despacho#plazo-de-entrega"}
+{"question": "puedo pagar en cuotas sin interés?", "expected_chunk": "pagos#pago-en-cuotas"}
+{"question": "me equivoqué de dirección, la puedo cambiar?", "expected_chunk": "despacho#cambio-de-direccion-de-despacho"}
+{"question": "quiero anular mi compra", "expected_chunk": "despacho#cancelacion-de-un-pedido"}
+{"question": "la tele que compré hace 3 meses dejó de prender", "expected_chunk": "garantia#garantia-legal-de-6-meses"}
+{"question": "puedo devolver unos audífonos que ya abrí?", "expected_chunk": "devoluciones#requisitos-para-devolver-un-producto-por-retracto"}
+{"question": "cuándo me devuelven la plata de la devolución", "expected_chunk": "devoluciones#reembolso-de-una-devolucion"}
+{"question": "aceptan efectivo o pago contra entrega?", "expected_chunk": "pagos#medios-de-pago-aceptados"}
+{"question": "me escribieron pidiendo el número de mi tarjeta por whatsapp, es de ustedes?", "expected_chunk": "pagos#link-de-pago-por-whatsapp"}
+{"question": "necesito factura para mi empresa", "expected_chunk": "pagos#boleta-y-factura"}
+{"question": "mi pedido dice entregado pero nunca llegó nada", "expected_chunk": "despacho#pedido-atrasado-o-no-recibido"}
+{"question": "la garantía cubre si se me cayó el celular?", "expected_chunk": "garantia#que-no-cubre-la-garantia"}
+{"question": "llegan a Punta Arenas?", "expected_chunk": "despacho#cobertura-de-despacho"}
+{"question": "quiero cambiar el refri por uno más grande", "expected_chunk": "devoluciones#cambio-de-un-producto-por-otro"}

@@ -48,6 +48,17 @@ uv run python -m db.load_data              # carga los CSV con COPY (reemplaza e
 Las restricciones del esquema (CHECK, llaves foráneas, UNIQUE) replican las reglas de `data/validate.py`
 y RLS está activo en todas las tablas para que la API REST pública de Supabase no exponga datos.
 
+### RAG (pgvector + embeddings de Gemini)
+
+```bash
+uv run python -m rag.indexer            # chunking + embeddings; solo procesa lo que cambió
+uv run python -m evals.retrieval_eval   # hit@1, hit@4 y MRR sobre preguntas reales
+```
+
+Políticas divididas por sección (22 chunks) y descripciones de productos, con `gemini-embedding-001`
+a 768 dimensiones e índice HNSW. Evaluación inicial de recuperación (16 preguntas):
+hit@1 = 0,88 · hit@4 = 1,00 · MRR = 0,93.
+
 ## API de comercio (VTEX-like)
 
 ```bash
