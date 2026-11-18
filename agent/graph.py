@@ -70,6 +70,14 @@ def build_graph(checkpointer=None):
     return graph.compile(checkpointer=checkpointer or InMemorySaver())
 
 
+def respond(graph, phone: str, text: str) -> str:
+    """Procesa un mensaje del cliente y devuelve la respuesta. "" = bot en pausa (atiende un ejecutivo)."""
+    # thread_id = teléfono: cada cliente tiene su propia memoria de conversación.
+    config = {"configurable": {"thread_id": phone}}
+    result = graph.invoke({"customer_phone": phone, "messages": [{"role": "user", "text": text}]}, config)
+    return result["last_reply"]
+
+
 def resume_bot(graph, phone: str) -> None:
     """Lo llama el ejecutivo al cerrar el caso: el bot vuelve a atender a ese cliente."""
     graph.update_state({"configurable": {"thread_id": phone}}, {"handoff_ticket": None})

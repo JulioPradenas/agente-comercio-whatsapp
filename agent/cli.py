@@ -8,7 +8,7 @@ Uso:
 
 import sys
 
-from agent.graph import build_graph, resume_bot
+from agent.graph import build_graph, respond, resume_bot
 
 # Clientes reales de los datos sintéticos. Cada teléfono es una conversación (thread) distinta.
 SCENARIOS = {
@@ -38,10 +38,8 @@ SCENARIOS = {
 
 
 def chat(graph, phone: str, text: str) -> str:
-    # thread_id = teléfono: cada cliente tiene su propia memoria de conversación.
-    config = {"configurable": {"thread_id": phone}}
-    result = graph.invoke({"customer_phone": phone, "messages": [{"role": "user", "text": text}]}, config)
-    return result["last_reply"] or f"(bot en pausa: el caso {result['handoff_ticket']} lo atiende un ejecutivo)"
+    """Como respond(), pero muestra en la terminal una nota cuando el bot está en pausa."""
+    return respond(graph, phone, text) or "(bot en pausa: el caso lo atiende un ejecutivo)"
 
 
 if __name__ == "__main__":

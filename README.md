@@ -94,6 +94,17 @@ en pausa para ese cliente hasta que el ejecutivo cierra el caso.
 uv run python -m evals.router_eval   # exactitud del router sobre evals/golden_set.jsonl (30 casos)
 ```
 
+## Canal WhatsApp (Cloud API)
+
+```bash
+uv run uvicorn channels.whatsapp_webhook:app --port 8000
+```
+
+- `GET /webhook`: verificación de Meta (`hub.verify_token` → `hub.challenge`).
+- `POST /webhook`: valida la firma `X-Hub-Signature-256` (HMAC con el App Secret), responde 200 de inmediato
+  y procesa en segundo plano; deduplica por `message.id` y procesa en orden los mensajes de un mismo cliente.
+- Si un ejecutivo tiene el caso, el bot no responde. Audios e imágenes reciben un aviso de "solo texto".
+
 ## API de comercio (VTEX-like)
 
 ```bash
