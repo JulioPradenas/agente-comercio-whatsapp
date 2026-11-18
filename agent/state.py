@@ -31,4 +31,6 @@ class ConversationState(TypedDict, total=False):
     escalation: Escalation | None  # pedida en este turno por una regla o por el subagente
     handoff_ticket: str | None  # si hay ticket abierto, el bot está en pausa
     consecutive_failures: int  # turnos seguidos en que el agente no pudo resolver
+    # Guardrails de entrada: "card" (envió datos de tarjeta), "injection" u "off_topic"
+    guard: Literal["card", "injection", "off_topic"] | None
 

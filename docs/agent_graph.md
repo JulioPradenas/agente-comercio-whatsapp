@@ -14,7 +14,9 @@ graph TD;
 	faq(faq)
 	handoff(handoff)
 	paused(paused)
+	guarded_reply(guarded_reply)
 	__end__([<p>__end__</p>]):::last
+	__start__ -.-> guarded_reply;
 	__start__ -.-> paused;
 	__start__ -.-> router;
 	faq -.-> __end__;
@@ -22,11 +24,13 @@ graph TD;
 	postsale -.-> __end__;
 	postsale -.-> handoff;
 	router -.-> faq;
+	router -.-> guarded_reply;
 	router -.-> handoff;
 	router -.-> postsale;
 	router -.-> sales;
 	sales -.-> __end__;
 	sales -.-> handoff;
+	guarded_reply --> __end__;
 	handoff --> __end__;
 	paused --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2

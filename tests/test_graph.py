@@ -1,8 +1,9 @@
 """Tests de la estructura del agente que no requieren llamar al LLM."""
 
-from agent.graph import after_start, build_graph
+from agent.graph import after_router, after_start, build_graph, respond
+from agent.guardrails import CARD_WARNING
 from agent.handoff import build_summary
-from agent.router import RouterDecision, handoff_reason
+from agent.router import RouterDecision, guard_reason, handoff_reason
 from agent.subagents import SUBAGENTS, render_history
 from agent.tools import CommerceTools
 
@@ -51,7 +52,10 @@ def test_render_history_groups_tool_results_as_context():
 
 
 def decision(**overrides) -> RouterDecision:
-    base = {"intent": "postsale", "wants_human": False, "frustration": "none", "legal_threat": False, "reason": ""}
+    base = {
+        "intent": "postsale", "wants_human": False, "frustration": "none", "legal_threat": False,
+        "injection_attempt": False, "off_topic": False, "reason": "",
+    }
     return RouterDecision(**{**base, **overrides})
 
 
@@ -82,3 +86,30 @@ def test_summary_for_human_agent():
     ]
     summary = build_summary(messages, "Garantía")
     assert "Garantía" in summary and "mi refri no enfría" in summary and "get_order_status" in summary
+
+
+# --- Guardrails de entrada ---
+
+
+def test_injection_and_off_topic_are_guarded():
+    assert guard_reason(decision(injection_attempt=True)) == "injection"
+    assert guard_reason(decision(off_topic=True)) == "off_topic"
+    assert guard_reason(decision()) is None
+
+
+def test_handoff_has_priority_over_guard():
+    # Si además de intentar manipular amenaza con el SERNAC, lo atiende una persona.
+    assert after_router({"escalation": {"trigger": "router_rule", "reason": "x"}, "guard": "injection"}) == "handoff"
+    assert after_router({"escalation": None, "guard": "injection", "intent": "sales"}) == "guarded_reply"
+
+
+def test_card_message_never_reaches_llm_and_is_stored_masked():
+    # Este camino no llama al router ni a Gemini: el test corre sin red.
+    graph = build_graph()
+    reply = respond(graph, "56900000001", "te paso mi tarjeta 4111 1111 1111 1111 para pagar")
+    assert reply == CARD_WARNING
+
+    stored = graph.get_state({"configurable": {"thread_id": "56900000001"}}).values["messages"]
+    assert "4111" not in str(stored)
+    assert "[TARJETA]" in stored[0]["text"]
+    assert graph.get_state({"configurable": {"thread_id": "56900000001"}}).values["guard"] is None

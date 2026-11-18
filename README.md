@@ -80,6 +80,19 @@ y solo sus herramientas ([diagrama](docs/agent_graph.md)):
 El teléfono del cliente viene de la sesión y nunca es un parámetro que el LLM pueda elegir.
 Modelo principal y de respaldo configurables (`CHAT_MODEL`, `FALLBACK_CHAT_MODEL`), con timeout.
 
+### Guardrails de entrada
+
+| Riesgo | Control | Dónde |
+|---|---|---|
+| Datos personales en el LLM, Postgres y tickets | RUT, tarjeta, email y celular se enmascaran con regex antes de entrar al estado | `agent/guardrails.py` |
+| Cliente envía su tarjeta por chat | Respuesta fija de seguridad, sin llamar al LLM | Nodo `guarded_reply` |
+| Prompt injection / fuera de tema | El router extrae la señal en su misma llamada; la respuesta es fija | `guard_reason()` |
+| Consultar pedidos de otra persona | El teléfono nunca es parámetro del LLM; la API valida dueño | Tools y API |
+
+```bash
+uv run python -m evals.router_eval adversarial_set   # 16/16: ataques, fuera de tema y falsos positivos
+```
+
 ### Derivación a atención humana
 
 | Disparador | Quién decide | Ejemplo |
