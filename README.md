@@ -93,6 +93,14 @@ Modelo principal y de respaldo configurables (`CHAT_MODEL`, `FALLBACK_CHAT_MODEL
 uv run python -m evals.router_eval adversarial_set   # 16/16: ataques, fuera de tema y falsos positivos
 ```
 
+### Guardrails de salida
+
+Antes de enviar una respuesta, `agent/output_guard.py` verifica:
+- **Precios respaldados:** todo monto en pesos debe aparecer en un resultado de herramienta o en un mensaje
+  del cliente (incluye "700 lucas", "500 mil"). Si no, el subagente recibe una corrección y reintenta una vez;
+  si vuelve a fallar se envía una respuesta segura sin montos y cuenta como fallo.
+- **Nunca pedir datos de pago** (tarjeta, CVV, clave), salvo en advertencias ("nunca te pediremos...").
+
 ### Derivación a atención humana
 
 | Disparador | Quién decide | Ejemplo |

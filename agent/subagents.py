@@ -5,6 +5,7 @@ import json
 from google.genai import types
 
 from agent.llm import generate
+from agent.output_guard import SAFE_FALLBACK, check_reply
 from agent.prompts import FAQ_PROMPT, POSTSALE_PROMPT, SALES_PROMPT
 from agent.state import ConversationState, Message
 from agent.tools import CommerceTools
@@ -58,6 +59,8 @@ def run_subagent(state: ConversationState, intent: str) -> dict:
 
     contents = render_history(state["messages"])
     new_messages: list[Message] = []
+    guard_retried = False  # el guardrail de salida permite UN reintento corregido
+    guard_failed = False
 
     for _ in range(MAX_TOOL_ROUNDS):
         try:
@@ -69,8 +72,24 @@ def run_subagent(state: ConversationState, intent: str) -> dict:
         contents.append(response.candidates[0].content)
 
         if not response.function_calls:
-            answer = response.text
-            break
+            answer = response.text or ""
+            # Guardrail de salida: la respuesta se revisa antes de enviarla al cliente.
+            violations = check_reply(answer, state["messages"] + new_messages)
+            if not violations:
+                break
+            print(f"   [output_guard] {'; '.join(violations)}")
+            if guard_retried:
+                # Segundo intento también falló: se envía una respuesta segura sin montos.
+                answer, guard_failed = SAFE_FALLBACK, True
+                break
+            guard_retried = True
+            correction = (
+                f"[Revisión automática, no visible al cliente] Tu respuesta NO se envió: {'; '.join(violations)}. "
+                "Corrígela: menciona solo montos que aparezcan en resultados de herramientas (o vuelve a consultarlas) "
+                "y nunca pidas datos de pago."
+            )
+            contents.append(types.Content(role="user", parts=[types.Part.from_text(text=correction)]))
+            continue
 
         result_parts = []
         for call in response.function_calls:
@@ -101,7 +120,9 @@ def run_subagent(state: ConversationState, intent: str) -> dict:
         }
 
     new_messages.append({"role": "assistant", "text": answer})
-    return {"messages": new_messages, "cart_id": tools.cart_id, "last_reply": answer, "consecutive_failures": 0}
+    # Si el guardrail tuvo que reemplazar la respuesta, cuenta como fallo (2 seguidos -> derivación).
+    failures = state.get("consecutive_failures", 0) + 1 if guard_failed else 0
+    return {"messages": new_messages, "cart_id": tools.cart_id, "last_reply": answer, "consecutive_failures": failures}
 
 
 def sales_node(state: ConversationState) -> dict:
