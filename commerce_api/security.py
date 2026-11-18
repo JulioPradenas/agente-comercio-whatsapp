@@ -4,18 +4,8 @@ import secrets
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
-class CommerceSettings(BaseSettings):
-    # Se leen de variables de entorno COMMERCE_APP_KEY / COMMERCE_APP_TOKEN (o del .env).
-    # Los valores por defecto existen solo porque es una API simulada local.
-    model_config = SettingsConfigDict(env_prefix="COMMERCE_", env_file=".env", extra="ignore")
-    app_key: str = "hogartec-dev-key"
-    app_token: str = "hogartec-dev-token"
-
-
-settings = CommerceSettings()
+from commerce_api.config import settings
 
 
 def require_app_credentials(

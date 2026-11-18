@@ -47,3 +47,14 @@ uv run pytest
 |---|---|---|
 | `GET /api/catalog_system/pub/products/search?ft=&fq=P[min TO max]&_from=&_to=` | Catalog API (legacy search) | Público |
 | `GET /api/logistics/pvt/inventory/skus/{skuId}` | Logistics API | `X-VTEX-API-AppKey` + `X-VTEX-API-AppToken` |
+| `POST /api/checkout/pub/orderForm` | Checkout API (crear carrito) | Público |
+| `GET /api/checkout/pub/orderForm/{orderFormId}` | Checkout API | Público |
+| `POST /api/checkout/pub/orderForm/{orderFormId}/items` | Checkout API (agregar ítems) | Público |
+| `GET /api/oms/pvt/orders/{orderId}` | OMS API | Credenciales |
+| `GET /api/oms/pvt/orders?q={teléfono\|email\|RUT}` | OMS API (listar) | Credenciales |
+| `POST /api/returns` | Propio (VTEX no lo trae nativo) | Credenciales |
+
+Montos de Checkout y OMS en centavos, como VTEX. Las reglas de devolución de `data/policies/devoluciones.md`
+se validan en la API y responden con códigos estables (`RETURN_WINDOW_EXPIRED`, `ORDER_NOT_OWNED`, etc.).
+
+Colección Postman con tests: [`postman/hogartec_commerce_api.postman_collection.json`](postman/hogartec_commerce_api.postman_collection.json).

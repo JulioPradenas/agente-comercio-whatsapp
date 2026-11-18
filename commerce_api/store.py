@@ -8,8 +8,10 @@ import json
 import unicodedata
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 import pandas as pd
+from fastapi import Depends
 
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 
@@ -28,8 +30,19 @@ class Store:
         self.products["search_text"] = (self.products["name"] + " " + self.products["description"]).apply(normalize)
 
         self.customers = pd.read_csv(raw_dir / "customers.csv", dtype={"phone": str})
-        self.orders = pd.read_csv(raw_dir / "orders.csv", dtype={"order_id": str})
+        self.orders = pd.read_csv(
+            raw_dir / "orders.csv",
+            dtype={"order_id": str},
+            parse_dates=["created_at", "delivered_at", "estimated_delivery"],
+        )
         self.order_items = pd.read_csv(raw_dir / "order_items.csv", dtype={"order_id": str})
+
+        # Estado mutable en memoria: carritos y devoluciones creados durante la ejecución.
+        # Se pierde al reiniciar y no se comparte entre procesos; suficiente para una API simulada.
+        self.order_forms: dict[str, dict[str, int]] = {}  # orderFormId -> {sku: cantidad}
+        self.returns: dict[str, dict] = {}  # returnId -> datos de la devolución
+
+    # --- Catálogo ---
 
     def search_products(
         self, text: str | None, min_price: int | None, max_price: int | None, offset: int, limit: int
@@ -49,8 +62,34 @@ class Store:
         match = self.products[self.products["sku"] == sku]
         return None if match.empty else match.iloc[0]
 
+    # --- Clientes y pedidos ---
+
+    def get_customer(self, customer_id: str) -> pd.Series:
+        return self.customers[self.customers["customer_id"] == customer_id].iloc[0]
+
+    def get_order(self, order_id: str) -> pd.Series | None:
+        match = self.orders[self.orders["order_id"] == order_id]
+        return None if match.empty else match.iloc[0]
+
+    def get_order_items(self, order_id: str) -> pd.DataFrame:
+        return self.order_items[self.order_items["order_id"] == order_id]
+
+    def find_orders_by_client(self, query: str) -> pd.DataFrame:
+        """Busca por teléfono, email o RUT exactos, como el parámetro `q` del OMS de VTEX."""
+        query = query.strip().lstrip("+")
+        matches = self.customers[
+            (self.customers["phone"] == query)
+            | (self.customers["email"].str.lower() == query.lower())
+            | (self.customers["rut"] == query)
+        ]
+        orders = self.orders[self.orders["customer_id"].isin(matches["customer_id"])]
+        return orders.sort_values("created_at", ascending=False)
+
 
 @lru_cache
 def get_store() -> Store:
     """Una sola instancia por proceso (los CSV se leen una vez, no en cada request)."""
     return Store()
+
+
+StoreDep = Annotated[Store, Depends(get_store)]

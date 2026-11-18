@@ -1,0 +1,322 @@
+{
+  "info": {
+    "name": "HogarTec Commerce API (VTEX-like)",
+    "description": "API simulada de comercio que consume el agente. Levantar con: uv run fastapi dev commerce_api/main.py --port 8001. Ejecutar la colección completa en orden con el Collection Runner.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8001" },
+    { "key": "appKey", "value": "hogartec-dev-key" },
+    { "key": "appToken", "value": "hogartec-dev-token" },
+    { "key": "skuInStock", "value": "" },
+    { "key": "orderFormId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Catálogo",
+      "item": [
+        {
+          "name": "Buscar smart TV bajo $500.000",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const products = pm.response.json();",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve productos', () => pm.expect(products.length).to.be.above(0));",
+                  "pm.test('Todos bajo $500.000', () => {",
+                  "  products.forEach(p => pm.expect(p.items[0].sellers[0].commertialOffer.Price).to.be.at.most(500000));",
+                  "});",
+                  "const inStock = products.find(p => p.items[0].sellers[0].commertialOffer.AvailableQuantity > 0);",
+                  "pm.collectionVariables.set('skuInStock', inStock.items[0].itemId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog_system/pub/products/search?ft=smart tv&fq=P[0 TO 500000]&_from=0&_to=9",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "catalog_system", "pub", "products", "search"],
+              "query": [
+                { "key": "ft", "value": "smart tv" },
+                { "key": "fq", "value": "P[0 TO 500000]" },
+                { "key": "_from", "value": "0" },
+                { "key": "_to", "value": "9" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Inventario de un SKU",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene balance por bodega', () => pm.expect(pm.response.json().balance).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-VTEX-API-AppKey", "value": "{{appKey}}" },
+              { "key": "X-VTEX-API-AppToken", "value": "{{appToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logistics/pvt/inventory/skus/{{skuInStock}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logistics", "pvt", "inventory", "skus", "{{skuInStock}}"]
+            }
+          }
+        },
+        {
+          "name": "Inventario sin credenciales (debe fallar)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('401 sin credenciales', () => pm.response.to.have.status(401));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/logistics/pvt/inventory/skus/{{skuInStock}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logistics", "pvt", "inventory", "skus", "{{skuInStock}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Checkout",
+      "item": [
+        {
+          "name": "Crear carrito (orderForm)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('orderFormId', pm.response.json().orderFormId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/checkout/pub/orderForm",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "checkout", "pub", "orderForm"]
+            }
+          }
+        },
+        {
+          "name": "Agregar producto al carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const orderForm = pm.response.json();",
+                  "pm.test('Producto agregado sin mensajes de error', () => {",
+                  "  pm.expect(orderForm.items).to.have.lengthOf(1);",
+                  "  pm.expect(orderForm.messages).to.be.empty;",
+                  "});",
+                  "pm.test('Total = productos + despacho (centavos)', () => {",
+                  "  const sum = orderForm.totalizers.reduce((acc, t) => acc + t.value, 0);",
+                  "  pm.expect(orderForm.value).to.eql(sum);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderItems\": [\n    { \"id\": \"{{skuInStock}}\", \"quantity\": 1, \"seller\": \"1\" }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/checkout/pub/orderForm/{{orderFormId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "checkout", "pub", "orderForm", "{{orderFormId}}", "items"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pedidos (OMS)",
+      "item": [
+        {
+          "name": "Detalle de pedido en camino",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Estado despachado', () => pm.expect(pm.response.json().status).to.eql('invoiced'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-VTEX-API-AppKey", "value": "{{appKey}}" },
+              { "key": "X-VTEX-API-AppToken", "value": "{{appToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/oms/pvt/orders/1006",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "oms", "pvt", "orders", "1006"]
+            }
+          }
+        },
+        {
+          "name": "Pedidos de un cliente por teléfono",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye el pedido 1011', () => {",
+                  "  pm.expect(pm.response.json().list.map(o => o.orderId)).to.include('1011');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-VTEX-API-AppKey", "value": "{{appKey}}" },
+              { "key": "X-VTEX-API-AppToken", "value": "{{appToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/oms/pvt/orders?q=56989910085",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "oms", "pvt", "orders"],
+              "query": [{ "key": "q", "value": "56989910085" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Devoluciones",
+      "item": [
+        {
+          "name": "Devolución válida (entregado hace 8 días)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 creada (409 si ya se pidió en esta ejecución del servidor)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-VTEX-API-AppKey", "value": "{{appKey}}" },
+              { "key": "X-VTEX-API-AppToken", "value": "{{appToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"1011\",\n  \"sku\": \"SKU-100224\",\n  \"requesterPhone\": \"56989910085\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/returns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "returns"]
+            }
+          }
+        },
+        {
+          "name": "Devolución fuera de plazo (debe fallar)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('422 con código RETURN_WINDOW_EXPIRED', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().detail.code).to.eql('RETURN_WINDOW_EXPIRED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-VTEX-API-AppKey", "value": "{{appKey}}" },
+              { "key": "X-VTEX-API-AppToken", "value": "{{appToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"1001\",\n  \"sku\": \"SKU-100104\",\n  \"requesterPhone\": \"56949169500\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/returns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "returns"]
+            }
+          }
+        },
+        {
+          "name": "Devolución desde otro teléfono (debe fallar)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('403 con código ORDER_NOT_OWNED', () => {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(pm.response.json().detail.code).to.eql('ORDER_NOT_OWNED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-VTEX-API-AppKey", "value": "{{appKey}}" },
+              { "key": "X-VTEX-API-AppToken", "value": "{{appToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"1011\",\n  \"sku\": \"SKU-100224\",\n  \"requesterPhone\": \"56911111111\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/returns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "returns"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

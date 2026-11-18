@@ -4,7 +4,9 @@ Los nombres de campo respetan los de VTEX, incluso los raros: `commertialOffer`
 está mal escrito en la API original y ahí se queda; `Price` va con mayúscula.
 """
 
-from pydantic import BaseModel
+from datetime import date, datetime
+
+from pydantic import BaseModel, Field
 
 
 # --- Catálogo: GET /api/catalog_system/pub/products/search ---
@@ -53,3 +55,130 @@ class WarehouseBalance(BaseModel):
 class InventoryResponse(BaseModel):
     skuId: str
     balance: list[WarehouseBalance]
+
+
+# --- Checkout: /api/checkout/pub/orderForm ---
+# Todos los montos del Checkout y del OMS de VTEX van en centavos (enteros): $479.990 -> 47999000.
+
+
+class OrderFormItemInput(BaseModel):
+    id: str = Field(description="SKU")
+    quantity: int = Field(ge=1, le=10)
+    seller: str = "1"
+
+
+class AddItemsRequest(BaseModel):
+    orderItems: list[OrderFormItemInput]
+
+
+class OrderFormItem(BaseModel):
+    id: str
+    name: str
+    quantity: int
+    seller: str = "1"
+    price: int  # centavos
+    listPrice: int  # centavos
+
+
+class Totalizer(BaseModel):
+    id: str  # "Items" o "Shipping"
+    name: str
+    value: int  # centavos
+
+
+class Message(BaseModel):
+    code: str  # ej: "withoutStock"
+    text: str
+    status: str = "error"
+
+
+class OrderForm(BaseModel):
+    orderFormId: str
+    items: list[OrderFormItem]
+    totalizers: list[Totalizer]
+    value: int  # total en centavos
+    messages: list[Message]
+
+
+# --- OMS: /api/oms/pvt/orders ---
+
+
+class OrderItem(BaseModel):
+    id: str
+    name: str
+    quantity: int
+    price: int  # centavos
+
+
+class ClientProfile(BaseModel):
+    firstName: str
+    lastName: str
+    email: str
+    phone: str
+    document: str  # RUT
+
+
+class Address(BaseModel):
+    street: str
+    city: str
+    state: str
+
+
+class LogisticsInfo(BaseModel):
+    shippingEstimateDate: date
+    deliveredDate: datetime | None  # simplificación: en VTEX viene del tracking del transportista
+
+
+class ShippingData(BaseModel):
+    address: Address
+    logisticsInfo: list[LogisticsInfo]
+
+
+class Order(BaseModel):
+    orderId: str
+    status: str
+    statusDescription: str
+    creationDate: datetime
+    value: int  # centavos
+    totals: list[Totalizer]
+    items: list[OrderItem]
+    clientProfileData: ClientProfile
+    shippingData: ShippingData
+
+
+class OrderSummary(BaseModel):
+    orderId: str
+    creationDate: datetime
+    status: str
+    statusDescription: str
+    totalValue: int  # centavos
+
+
+class Paging(BaseModel):
+    total: int
+    pages: int
+    currentPage: int
+    perPage: int
+
+
+class OrderList(BaseModel):
+    list: list[OrderSummary]
+    paging: Paging
+
+
+# --- Devoluciones: /api/returns (NO es un endpoint nativo de VTEX) ---
+
+
+class ReturnRequest(BaseModel):
+    orderId: str
+    sku: str
+    requesterPhone: str = Field(description="Teléfono de quien pide la devolución, en formato 569XXXXXXXX")
+
+
+class ReturnResponse(BaseModel):
+    returnId: str
+    orderId: str
+    sku: str
+    status: str
+    refundValue: int  # centavos
+    message: str
