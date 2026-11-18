@@ -35,3 +35,15 @@ uv run python data/generate_catalog.py
 uv run python data/generate_orders.py
 uv run python data/validate.py
 ```
+
+## API de comercio (VTEX-like)
+
+```bash
+uv run fastapi dev commerce_api/main.py --port 8001   # docs en http://localhost:8001/docs
+uv run pytest
+```
+
+| Endpoint | Equivalente VTEX | Acceso |
+|---|---|---|
+| `GET /api/catalog_system/pub/products/search?ft=&fq=P[min TO max]&_from=&_to=` | Catalog API (legacy search) | Público |
+| `GET /api/logistics/pvt/inventory/skus/{skuId}` | Logistics API | `X-VTEX-API-AppKey` + `X-VTEX-API-AppToken` |

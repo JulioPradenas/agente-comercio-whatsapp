@@ -6,5 +6,14 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "faker>=40.54.0",
+    "fastapi[standard]>=0.165.0",
     "pandas>=3.1.1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
