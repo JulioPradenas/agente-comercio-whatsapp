@@ -11,3 +11,4 @@ wheels/
 
 # Secretos: nunca al repo
 .env
+.env.render
