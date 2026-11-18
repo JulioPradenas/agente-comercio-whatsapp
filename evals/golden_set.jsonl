@@ -1,0 +1,30 @@
+{"id": "sales-01", "context": [], "message": "busco un smart tv de 55 pulgadas", "expected_route": "sales", "expected_tools": ["search_products"]}
+{"id": "sales-02", "context": [], "message": "tienen notebooks con 16 gb de ram bajo 700 lucas?", "expected_route": "sales", "expected_tools": ["search_products"]}
+{"id": "sales-03", "context": [], "message": "necesito algo para lavar la ropa, somos 5 en la casa", "expected_route": "sales", "expected_tools": ["search_products"]}
+{"id": "sales-04", "context": [], "message": "qué audífonos con cancelación de ruido me recomiendas?", "expected_route": "sales", "expected_tools": ["search_products"]}
+{"id": "sales-05", "context": [{"role": "user", "text": "busco un microondas"}, {"role": "assistant", "text": "Tengo el Microondas Oster 25 L a $89.990 y el Samsung 28 L con grill a $129.990. ¿Te interesa alguno?"}], "message": "sí, el samsung, agrégalo", "expected_route": "sales", "expected_tools": ["add_to_cart"]}
+{"id": "sales-06", "context": [{"role": "user", "text": "busco un celular samsung"}, {"role": "assistant", "text": "Tengo el Smartphone Samsung 256GB Negro a $549.990. ¿Te sirve?"}], "message": "y hay stock?", "expected_route": "sales", "expected_tools": ["check_stock"]}
+{"id": "sales-07", "context": [], "message": "cuál es la aspiradora robot más barata que tienen?", "expected_route": "sales", "expected_tools": ["search_products"]}
+{"id": "sales-08", "context": [], "message": "quiero comprar un refrigerador LG", "expected_route": "sales", "expected_tools": ["search_products"]}
+{"id": "post-01", "context": [], "message": "en qué va mi pedido?", "expected_route": "postsale", "expected_tools": ["list_my_orders", "get_order_status"]}
+{"id": "post-02", "context": [], "message": "cuándo me llega el pedido 1291?", "expected_route": "postsale", "expected_tools": ["get_order_status"]}
+{"id": "post-03", "context": [], "message": "quiero devolver los audífonos que compré, no me gustaron", "expected_route": "postsale", "expected_tools": ["list_my_orders", "get_order_status"]}
+{"id": "post-04", "context": [], "message": "puedo cancelar el pedido que hice ayer?", "expected_route": "postsale", "expected_tools": ["list_my_orders", "get_order_status"]}
+{"id": "post-05", "context": [], "message": "mi pedido dice entregado pero no me ha llegado nada", "expected_route": "postsale", "expected_tools": ["escalate_to_human"]}
+{"id": "post-06", "context": [], "message": "la lavadora que compré hace 3 meses hace un ruido terrible", "expected_route": "postsale", "expected_tools": ["escalate_to_human"]}
+{"id": "post-07", "context": [], "message": "me equivoqué en la dirección del pedido 1291, la puedo cambiar?", "expected_route": "postsale", "expected_tools": ["get_order_status"]}
+{"id": "post-08", "context": [{"role": "user", "text": "en qué va mi pedido 1011?"}, {"role": "assistant", "text": "Tu pedido 1011 fue entregado el 12 de noviembre."}], "message": "ok, quiero devolverlo", "expected_route": "postsale", "expected_tools": ["request_return"]}
+{"id": "faq-01", "context": [], "message": "cuánto cuesta el despacho?", "expected_route": "faq", "expected_tools": ["search_policies"]}
+{"id": "faq-02", "context": [], "message": "puedo pagar en cuotas sin interés?", "expected_route": "faq", "expected_tools": ["search_policies"]}
+{"id": "faq-03", "context": [], "message": "despachan a Punta Arenas?", "expected_route": "faq", "expected_tools": ["search_policies"]}
+{"id": "faq-04", "context": [], "message": "cuánto dura la garantía de los productos?", "expected_route": "faq", "expected_tools": ["search_policies"]}
+{"id": "faq-05", "context": [], "message": "hola!", "expected_route": "faq", "expected_tools": []}
+{"id": "faq-06", "context": [], "message": "aceptan transferencia?", "expected_route": "faq", "expected_tools": ["search_policies"]}
+{"id": "faq-07", "context": [], "message": "me llegó un mensaje pidiendo mi clave de la tarjeta a nombre de ustedes, es real?", "expected_route": "faq", "expected_tools": ["search_policies"]}
+{"id": "handoff-01", "context": [], "message": "quiero hablar con un ejecutivo", "expected_route": "handoff", "expected_tools": []}
+{"id": "handoff-02", "context": [], "message": "páseme con una persona real por favor", "expected_route": "handoff", "expected_tools": []}
+{"id": "handoff-03", "context": [], "message": "voy a hacer un reclamo en el SERNAC si no me solucionan esto", "expected_route": "handoff", "expected_tools": []}
+{"id": "handoff-04", "context": [], "message": "ES LA TERCERA VEZ QUE ESCRIBO Y NADIE ME RESPONDE, SON UNOS SINVERGÜENZAS", "expected_route": "handoff", "expected_tools": []}
+{"id": "handoff-05", "context": [], "message": "mi abogado se va a contactar con ustedes", "expected_route": "handoff", "expected_tools": []}
+{"id": "edge-01", "context": [], "message": "pucha, mi pedido viene atrasado, en qué va?", "expected_route": "postsale", "expected_tools": ["list_my_orders", "get_order_status"]}
+{"id": "edge-02", "context": [{"role": "user", "text": "cuánto cuesta el despacho?"}, {"role": "assistant", "text": "El despacho cuesta $3.990 y es gratis desde $49.990."}], "message": "ya, entonces muéstrame microondas", "expected_route": "sales", "expected_tools": ["search_products"]}

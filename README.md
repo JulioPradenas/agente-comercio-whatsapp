@@ -79,6 +79,21 @@ y solo sus herramientas ([diagrama](docs/agent_graph.md)):
 El teléfono del cliente viene de la sesión y nunca es un parámetro que el LLM pueda elegir.
 Modelo principal y de respaldo configurables (`CHAT_MODEL`, `FALLBACK_CHAT_MODEL`), con timeout.
 
+### Derivación a atención humana
+
+| Disparador | Quién decide | Ejemplo |
+|---|---|---|
+| Pide una persona, amenaza legal, frustración alta, 2 fallos seguidos | Reglas en código (`handoff_reason`) sobre señales que extrae el router | "páseme con un ejecutivo", "voy al SERNAC" |
+| Lo indica la política | Subagente con la tool `escalate_to_human` | Producto con falla, pedido entregado que no llegó |
+| Proveedor LLM caído | Sistema | Todos los modelos fallan |
+
+Cada derivación crea un ticket en `handoff_tickets` con motivo, resumen y transcripción, y el bot queda
+en pausa para ese cliente hasta que el ejecutivo cierra el caso.
+
+```bash
+uv run python -m evals.router_eval   # exactitud del router sobre evals/golden_set.jsonl (30 casos)
+```
+
 ## API de comercio (VTEX-like)
 
 ```bash

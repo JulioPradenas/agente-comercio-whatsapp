@@ -13,9 +13,12 @@ MAX_TOOL_ROUNDS = 5
 HISTORY_LIMIT = 20  # mensajes previos que se envían al modelo: acota tokens (= costo por conversación)
 
 SUBAGENTS = {
-    "sales": (SALES_PROMPT, ["search_products", "check_stock", "add_to_cart", "search_policies"]),
-    "postsale": (POSTSALE_PROMPT, ["list_my_orders", "get_order_status", "request_return", "search_policies"]),
-    "faq": (FAQ_PROMPT, ["search_policies"]),
+    "sales": (SALES_PROMPT, ["search_products", "check_stock", "add_to_cart", "search_policies", "escalate_to_human"]),
+    "postsale": (
+        POSTSALE_PROMPT,
+        ["list_my_orders", "get_order_status", "request_return", "search_policies", "escalate_to_human"],
+    ),
+    "faq": (FAQ_PROMPT, ["search_policies", "escalate_to_human"]),
 }
 
 
@@ -57,7 +60,12 @@ def run_subagent(state: ConversationState, intent: str) -> dict:
     new_messages: list[Message] = []
 
     for _ in range(MAX_TOOL_ROUNDS):
-        response = generate(contents, config)
+        try:
+            response = generate(contents, config)
+        except RuntimeError:
+            # Todos los modelos caídos: se deriva en vez de dejar al cliente sin respuesta.
+            escalation = {"trigger": "system_failure", "reason": "Asistente no disponible (proveedor LLM)"}
+            return {"messages": new_messages, "escalation": escalation}
         contents.append(response.candidates[0].content)
 
         if not response.function_calls:
@@ -76,11 +84,24 @@ def run_subagent(state: ConversationState, intent: str) -> dict:
             result_parts.append(types.Part.from_function_response(name=call.name, response=result))
             new_messages.append({"role": "tool", "name": call.name, "result": result})
         contents.append(types.Content(role="user", parts=result_parts))
+
+        # El subagente pidió derivar: se corta aquí y el nodo de derivación da la respuesta.
+        if tools.escalation_reason:
+            escalation = {"trigger": "agent_policy", "reason": tools.escalation_reason}
+            return {"messages": new_messages, "cart_id": tools.cart_id, "escalation": escalation}
     else:
+        # Agotó las rondas sin responder: cuenta como fallo (2 seguidos -> derivación por regla del router).
         answer = "Disculpa, no pude resolver tu consulta. ¿Me la puedes explicar de otra forma?"
+        new_messages.append({"role": "assistant", "text": answer})
+        return {
+            "messages": new_messages,
+            "cart_id": tools.cart_id,
+            "last_reply": answer,
+            "consecutive_failures": state.get("consecutive_failures", 0) + 1,
+        }
 
     new_messages.append({"role": "assistant", "text": answer})
-    return {"messages": new_messages, "cart_id": tools.cart_id, "last_reply": answer}
+    return {"messages": new_messages, "cart_id": tools.cart_id, "last_reply": answer, "consecutive_failures": 0}
 
 
 def sales_node(state: ConversationState) -> dict:

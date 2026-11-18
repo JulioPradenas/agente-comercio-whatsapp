@@ -35,8 +35,12 @@ def generate(contents: list[types.Content], config: types.GenerateContentConfig)
     for model in models:
         try:
             return client.models.generate_content(model=model, contents=contents, config=config)
-        except errors.ClientError:
-            raise  # 4xx: el request está mal; otro modelo no lo arreglaría
+        except errors.ClientError as error:
+            # 429 = cuota agotada. En el tier gratuito la cuota es por modelo (15 req/min),
+            # así que el modelo de respaldo sí puede responder. Otro 4xx = request mal armado: se propaga.
+            if error.code != 429:
+                raise
+            print(f"   [{model} sin cuota (429), probando el siguiente modelo]")
         except Exception as error:  # 503, timeout, red: problemas del proveedor -> siguiente modelo
             print(f"   [{model} no disponible ({type(error).__name__}), probando el siguiente modelo]")
     raise RuntimeError("Ningún modelo disponible")

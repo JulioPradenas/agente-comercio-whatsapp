@@ -45,6 +45,7 @@ class CommerceTools:
         self.customer_phone = customer_phone
         self.client = client or CommerceClient()
         self.cart_id: str | None = None  # el carrito vive mientras dure la conversación
+        self.escalation_reason: str | None = None  # lo marca escalate_to_human; lo lee el subagente
 
     def functions(self) -> list[Callable]:
         return [
@@ -55,6 +56,7 @@ class CommerceTools:
             self.get_order_status,
             self.request_return,
             self.search_policies,
+            self.escalate_to_human,
         ]
 
     def declarations(self) -> list[types.FunctionDeclaration]:
@@ -190,3 +192,13 @@ class CommerceTools:
         lo que digan estos fragmentos."""
         hits = rag_search_policies(question, k=4)
         return {"fragments": [{"source": f"{hit.source} > {hit.section}", "text": hit.content} for hit in hits]}
+
+    # --- Derivación ---
+
+    def escalate_to_human(self, reason: str) -> dict:
+        """Deriva la conversación a un ejecutivo humano. Usar cuando la política lo indica: casos de
+        garantía o producto con falla, pedido atrasado o que figura entregado pero no llegó, cambio de
+        dirección de un pedido ya en preparación, o cuando las políticas no responden la consulta.
+        `reason` resume el caso en una frase para el ejecutivo."""
+        self.escalation_reason = reason
+        return {"escalated": True}
