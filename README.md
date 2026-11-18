@@ -139,6 +139,13 @@ Configuración en Meta que suele faltar:
 3. Suscribir la cuenta de WhatsApp Business a la app (sin esto Meta verifica el webhook pero no envía mensajes):
    `POST https://graph.facebook.com/v25.0/{WABA_ID}/subscribed_apps` con el access token.
 
+Token permanente (System User en Meta Business Settings), en este orden:
+1. Crear el System User y asignarle **todos** los activos antes de generar el token: la app, la
+   **WhatsApp account** y también la **Messaging account** (Messaging accounts > Linked accounts).
+   Sin la Messaging account, el token falla con `(#10) Viewer cannot access the provided Paid Message Account`.
+2. Generar el token: expiración *Never*, permisos `whatsapp_business_messaging` y `whatsapp_business_management`.
+3. Verificar antes de usarlo: `GET /debug_token` (tipo `SYSTEM_USER`, `expires_at = 0`) y un envío de prueba.
+
 ## API de comercio (VTEX-like)
 
 ```bash
