@@ -193,7 +193,7 @@ section.page { display: grid; gap: 22px; padding-top: 8px; border-top: 1px solid
         <tr><td><code>kpi_sales_funnel</code></td><td>Etapa del embudo</td><td>step_order, step, conversations, share_of_start</td><td>2</td><td>share_of_start → Porcentaje</td></tr>
         <tr><td><code>kpi_handoff_reasons</code></td><td>Motivo de derivación</td><td>handoff_trigger, conversations, share</td><td>3</td><td>share → Porcentaje</td></tr>
         <tr><td><code>kpi_efficiency_by_intent</code></td><td>Intención (nivel turno)</td><td>intent, turns, latency_p50_s, latency_p90_s, avg_llm_calls, avg_input_tokens, avg_output_tokens, avg_cost_per_turn_usd</td><td>4</td><td>avg_cost_per_turn_usd → Moneda USD (6 decimales)</td></tr>
-        <tr><td><code>conversations</code> (tabla)</td><td>Conversación</td><td>conversation_id, started_at, persona, first_intent, converted, cart_total_clp, cost_usd</td><td>2</td><td>cart_total_clp → Moneda CLP · started_at → Fecha y hora</td></tr>
+        <tr><td><code>conversations</code> (tabla)</td><td>Conversación</td><td>conversation_id, started_at, persona, first_intent, sales_conversation, converted, cart_total_clp, cost_usd</td><td>2</td><td>cart_total_clp → Moneda CLP · started_at → Fecha y hora · sales_conversation y converted son booleanos (verdadero/falso)</td></tr>
       </tbody>
     </table>
   </div>
@@ -252,7 +252,7 @@ section.page { display: grid; gap: 22px; padding-top: 8px; border-top: 1px solid
       <tbody>
         <tr><td>A</td><td>4 tarjetas de ventas</td><td>Tarjeta de resultados</td><td><code>kpi_sales_funnel</code> · <code>kpi_summary</code></td><td>Conversaciones de venta (etapa 1) · conversión · ventas logradas (etapa 4) · ticket promedio</td><td>Mismas medidas que la página 1. Para filtrar una etapa, usa un filtro de componente <code>step_order = 1</code> (o 4).</td></tr>
         <tr><td>B</td><td>Embudo de ventas</td><td>Gráfico de barras horizontal</td><td><code>kpi_sales_funnel</code></td><td>Dimensión step · Métrica conversations · Orden step_order ascendente</td><td>Color por etapa con el azul ordinal (#86B6EF → #1C5CAB). Etiqueta con conversaciones y share_of_start. Anota la caída mayor con un cuadro de texto.</td></tr>
-        <tr><td>C</td><td>Conversión por perfil de cliente</td><td>Tabla</td><td><code>conversations</code></td><td>Dimensión persona · Métricas Recuento de conversation_id, SUM(converted)</td><td>Filtro de componente <code>sales_conversation = true</code>. Barras dentro de la celda en la columna de ventas.</td></tr>
+        <tr><td>C</td><td>Conversión por perfil de cliente</td><td>Tabla</td><td><code>conversations</code></td><td>Dimensión persona · Métricas Recuento de conversation_id y <code>ventas</code> (SUM)</td><td>Looker no suma booleanos: crea en la fuente <code>conversations</code> el campo calculado <code>ventas</code> = <code>CASE WHEN converted THEN 1 ELSE 0 END</code>. Filtro de componente <code>sales_conversation</code> es verdadero. Barras dentro de la celda en la columna de ventas.</td></tr>
         <tr><td>D</td><td>Ventas logradas</td><td>Tabla</td><td><code>conversations</code></td><td>conversation_id, started_at, cart_total_clp, cost_usd</td><td>Filtro <code>converted = true</code>. Orden por started_at descendente. cart_total_clp en CLP.</td></tr>
       </tbody>
     </table>
