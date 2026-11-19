@@ -10,6 +10,7 @@ from google.genai import types
 from pydantic import BaseModel, Field
 
 from agent.llm import generate
+from agent.observability import get_client, observe
 from agent.prompts import ROUTER_PROMPT
 from agent.state import ConversationState, Escalation, Intent
 
@@ -77,6 +78,7 @@ def classify(state: ConversationState) -> RouterDecision:
     return response.parsed
 
 
+@observe(name="router", as_type="chain", capture_input=False, capture_output=False)
 def route(state: ConversationState) -> dict:
     try:
         decision = classify(state)
@@ -90,6 +92,7 @@ def route(state: ConversationState) -> dict:
     print(f"   [router] {decision.intent} | humano={decision.wants_human} frustración={decision.frustration} "
           f"legal={decision.legal_threat} injection={decision.injection_attempt} fuera={decision.off_topic} "
           f"-> {'DERIVAR: ' + reason if reason else guard or 'bot'}")
+    get_client().update_current_span(output=decision.model_dump(), metadata={"handoff": reason, "guard": guard})
     escalation = {"trigger": "router_rule", "reason": reason} if reason else None
     # escalation y guard se devuelven siempre (también None) para limpiar los de un turno anterior.
     return {"intent": decision.intent, "escalation": escalation, "guard": guard}

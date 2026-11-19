@@ -132,6 +132,20 @@ uv run python -m evals.agent_eval   # golden set de punta a punta + LLM-as-judge
 GitHub Actions corre los tests unitarios en cada push y la evaluación completa en cada Pull Request
 (consume cuota del LLM). El juez usa un modelo distinto al del agente para reducir el sesgo de autopreferencia.
 
+## Observabilidad (Langfuse)
+
+Cada mensaje de WhatsApp es una traza: router → subagente → tools → embeddings → guardrail de salida, con latencia
+por paso y tokens y costo por llamada a Gemini (precio de lista del tier pagado; el teléfono se envía anonimizado).
+
+| Mensaje de ejemplo | Latencia | Llamadas LLM | Tokens in / out | Costo |
+|---|---|---|---|---|
+| Búsqueda de producto | 22,4 s | 3 | 2.775 / 265 | US$0,0015 |
+| Política de despacho | 17,9 s | 3 | 3.105 / 168 | US$0,0014 |
+| Estado de pedido | 19,1 s | 4 | 7.726 / 183 | US$0,0028 |
+
+Costo promedio: **US$0,0019 por mensaje (~US$1,9 por 1.000 mensajes)**. Hallazgo: el router toma ~6 s de cada
+respuesta solo para clasificar; es el primer candidato a optimizar.
+
 ## Despliegue (Render, plan gratuito)
 
 Un solo servicio Docker (`server.py`) con el webhook y la API de comercio montada en `/commerce`.

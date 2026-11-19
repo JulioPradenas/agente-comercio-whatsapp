@@ -5,6 +5,7 @@ import json
 from google.genai import types
 
 from agent.llm import generate
+from agent.observability import get_client, observe
 from agent.output_guard import SAFE_FALLBACK, check_reply
 from agent.prompts import FAQ_PROMPT, POSTSALE_PROMPT, SALES_PROMPT
 from agent.state import ConversationState, Message
@@ -43,8 +44,10 @@ def render_history(messages: list[Message]) -> list[types.Content]:
     return contents
 
 
+@observe(name="subagent", as_type="agent", capture_input=False, capture_output=False)
 def run_subagent(state: ConversationState, intent: str) -> dict:
     system_prompt, allowed_tools = SUBAGENTS[intent]
+    get_client().update_current_span(name=f"subagent:{intent}")
     tools = CommerceTools(customer_phone=state["customer_phone"])
     tools.cart_id = state.get("cart_id")
 
@@ -102,10 +105,12 @@ def run_subagent(state: ConversationState, intent: str) -> dict:
         for call in response.function_calls:
             arguments = dict(call.args or {})
             # Defensa extra: si el modelo pide una tool que este subagente no tiene, no se ejecuta.
-            if call.name not in functions:
-                result = {"error": "TOOL_NOT_ALLOWED", "guidance": "Esa acción no está disponible en esta área."}
-            else:
-                result = functions[call.name](**arguments)
+            with get_client().start_as_current_observation(name=call.name, as_type="tool", input=arguments) as tool_span:
+                if call.name not in functions:
+                    result = {"error": "TOOL_NOT_ALLOWED", "guidance": "Esa acción no está disponible en esta área."}
+                else:
+                    result = functions[call.name](**arguments)
+                tool_span.update(output=result)
             print(f"   [{intent}] {call.name}({json.dumps(arguments, ensure_ascii=False)})")
             result_parts.append(types.Part.from_function_response(name=call.name, response=result))
             new_messages.append({"role": "tool", "name": call.name, "result": result})

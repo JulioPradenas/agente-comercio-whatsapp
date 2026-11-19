@@ -9,6 +9,7 @@
 import json
 import re
 
+from agent.observability import observe
 from agent.state import Message
 
 # $479.990 / $ 3.990 / $49990
@@ -57,6 +58,7 @@ def asks_for_payment_data(reply: str) -> bool:
     return any(PAYMENT_DATA_REQUEST.search(sentence) and not NEGATION.search(sentence) for sentence in sentences)
 
 
+@observe(name="output_guard", as_type="guardrail", capture_input=False)
 def check_reply(reply: str, messages: list[Message]) -> list[str]:
     """Devuelve las violaciones encontradas (lista vacía = la respuesta se puede enviar)."""
     violations = []

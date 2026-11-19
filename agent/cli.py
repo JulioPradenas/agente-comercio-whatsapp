@@ -9,6 +9,7 @@ Uso:
 import sys
 
 from agent.graph import build_graph, respond, resume_bot
+from agent.observability import get_client
 
 # Clientes reales de los datos sintéticos. Cada teléfono es una conversación (thread) distinta.
 SCENARIOS = {
@@ -58,3 +59,4 @@ if __name__ == "__main__":
             for text in messages:
                 print(f"CLIENTE: {text}")
                 print(f"AGENTE:  {chat(graph, phone, text)}")
+    get_client().flush()  # las trazas se envían en lotes: sin esto, las últimas se pierden al salir

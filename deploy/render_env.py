@@ -25,6 +25,9 @@ class DeploySettings(BaseSettings):
     whatsapp_demo_customer_phone: str = "56989910085"
     chat_model: str = "gemini-3.5-flash-lite"
     fallback_chat_model: str = "gemini-3.1-flash-lite"
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_base_url: str = "https://cloud.langfuse.com"
 
 
 PORT = 8080  # se fija explícitamente: Render usa 10000 por defecto y COMMERCE_API_URL debe apuntar al mismo puerto
@@ -49,6 +52,9 @@ def build_env() -> dict[str, str]:
         "WHATSAPP_APP_SECRET": settings.whatsapp_app_secret,
         "WHATSAPP_GRAPH_VERSION": settings.whatsapp_graph_version,
         "WHATSAPP_DEMO_CUSTOMER_PHONE": settings.whatsapp_demo_customer_phone,
+        "LANGFUSE_PUBLIC_KEY": settings.langfuse_public_key,
+        "LANGFUSE_SECRET_KEY": settings.langfuse_secret_key,
+        "LANGFUSE_BASE_URL": settings.langfuse_base_url,
     }
 
 

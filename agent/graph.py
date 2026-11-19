@@ -12,6 +12,7 @@ from langgraph.graph import END, START, StateGraph
 
 from agent.guardrails import CARD_WARNING, INJECTION_REPLY, OFF_TOPIC_REPLY, mask_pii
 from agent.handoff import HANDOFF_MESSAGE, create_ticket
+from agent.observability import anonymize, get_client, propagate_attributes
 from agent.router import route
 from agent.state import ConversationState
 from agent.subagents import faq_node, postsale_node, sales_node
@@ -102,7 +103,19 @@ def respond(graph, phone: str, text: str) -> str:
     masked = mask_pii(text)
     guard = "card" if "TARJETA" in masked.found else None
     message = {"role": "user", "text": masked.text}
-    result = graph.invoke({"customer_phone": phone, "messages": [message], "guard": guard}, config)
+
+    customer = anonymize(phone)
+    with get_client().start_as_current_observation(name="whatsapp-turn", as_type="agent", input=masked.text) as turn:
+        with propagate_attributes(session_id=customer, user_id=customer, tags=["whatsapp"]):
+            result = graph.invoke({"customer_phone": phone, "messages": [message], "guard": guard}, config)
+        turn.update(
+            output=result["last_reply"],
+            metadata={
+                "intent": result.get("intent"),
+                "handoff_ticket": result.get("handoff_ticket"),
+                "pii_masked": masked.found,
+            },
+        )
     return result["last_reply"]
 
 

@@ -26,6 +26,7 @@ import uvicorn  # noqa: E402
 
 from agent.graph import build_graph  # noqa: E402
 from agent.guardrails import mask_pii  # noqa: E402
+from agent.observability import get_client  # noqa: E402
 from commerce_api.main import app as commerce_app  # noqa: E402
 from evals.judge import judge_reply  # noqa: E402
 
@@ -154,4 +155,5 @@ if __name__ == "__main__":
     if summary_path := os.environ.get("GITHUB_STEP_SUMMARY"):  # en GitHub Actions se muestra en la página del run
         Path(summary_path).write_text(report)
     print("\n" + report)
+    get_client().flush()
     sys.exit(1 if failed else 0)

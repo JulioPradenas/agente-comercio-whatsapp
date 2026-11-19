@@ -13,6 +13,8 @@ from google import genai
 from google.genai import errors, types
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from agent.observability import observe
+
 TaskType = Literal["RETRIEVAL_DOCUMENT", "RETRIEVAL_QUERY"]
 BATCH_SIZE = 50  # textos por request: menos llamadas a la API y menos riesgo de rate limit
 
@@ -57,5 +59,6 @@ def embed_documents(texts: list[str]) -> list[np.ndarray]:
     return vectors
 
 
+@observe(name="embed_query", as_type="embedding", capture_output=False)
 def embed_query(text: str) -> np.ndarray:
     return _embed_batch([text], "RETRIEVAL_QUERY")[0]

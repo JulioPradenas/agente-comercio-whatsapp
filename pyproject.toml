@@ -8,6 +8,7 @@ dependencies = [
     "faker>=40.54.0",
     "fastapi[standard]>=0.165.0",
     "google-genai>=3.5.0",
+    "langfuse>=5.2.0",
     "langgraph>=1.2.22",
     "langgraph-checkpoint-postgres>=3.2.1",
     "numpy>=2.5.5",
