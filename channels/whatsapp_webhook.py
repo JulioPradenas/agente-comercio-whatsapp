@@ -9,6 +9,7 @@ Uso local: uv run uvicorn channels.whatsapp_webhook:app --port 8000
 import hashlib
 import hmac
 import logging
+import os
 import threading
 from collections import OrderedDict
 from collections.abc import Callable
@@ -138,6 +139,19 @@ def create_app(agent: AgentFn, whatsapp: WhatsAppClient, settings: WhatsAppSetti
     @app.get("/health")
     def health() -> dict:
         return {"status": "ok"}
+
+    @app.get("/health/tracing")
+    def tracing_health() -> dict:
+        """Diagnóstico de Langfuse: dice si las claves existen y autentican, nunca sus valores.
+        Separado de /health porque auth_check() llama a Langfuse y Render consulta /health cada pocos segundos."""
+        from agent.observability import get_client
+
+        configured = {name: bool(os.environ.get(name)) for name in ("LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_BASE_URL")}
+        try:
+            authenticated = get_client().auth_check() if all(configured.values()) else False
+        except Exception as error:
+            authenticated = f"error: {type(error).__name__}"
+        return {"variables_present": configured, "authenticated": authenticated}
 
     return app
 
