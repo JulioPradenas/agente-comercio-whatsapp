@@ -15,6 +15,7 @@ observabilidad de costo y latencia, y KPIs de negocio.
 | **Demo** | Video de 2 minutos: _(pendiente)_ |
 | **Dashboard de KPIs** | Looker Studio: _(pendiente)_ · [guía de construcción](docs/dashboard_guide.html) |
 | **Detalle técnico** | [docs/technical.md](docs/technical.md) |
+| **Producto** | [PRD](docs/product/prd.md) · [diseño conversacional](docs/product/conversation_design.md) · [backlog](docs/product/backlog_guide.md) |
 
 ## Resultados
 
