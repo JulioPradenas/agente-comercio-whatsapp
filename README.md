@@ -1,221 +1,137 @@
 # Agente de compra y postventa por WhatsApp
 
-Agente conversacional para una tienda online de electro y hogar: busca productos, genera el link de compra,
-informa el estado de pedidos, gestiona devoluciones y deriva a un humano cuando corresponde.
+[![CI](https://github.com/JulioPradenas/agente-comercio-whatsapp/actions/workflows/ci.yml/badge.svg)](https://github.com/JulioPradenas/agente-comercio-whatsapp/actions/workflows/ci.yml)
 
-> En producción en Render: el agente responde por WhatsApp (número de prueba de Meta).
-> Pendiente: guardrails, evaluación completa en CI y dashboard de KPIs.
+Agente conversacional en producción para una tienda online de electro y hogar (HogarTec, ficticia).
+Atiende por WhatsApp: recomienda productos, arma el carrito y entrega el link de pago, informa el estado
+de pedidos, gestiona devoluciones según la política y deriva a un ejecutivo cuando corresponde.
+
+El proyecto cubre el ciclo completo de un producto de IA conversacional: diseño del agente, integración
+con un comercio tipo VTEX, canal real de WhatsApp, guardrails, evaluación automatizada en CI,
+observabilidad de costo y latencia, y KPIs de negocio.
+
+| | |
+|---|---|
+| **Demo** | Video de 2 minutos: _(pendiente)_ |
+| **Dashboard de KPIs** | Looker Studio: _(pendiente)_ · [guía de construcción](docs/dashboard_guide.html) |
+| **Detalle técnico** | [docs/technical.md](docs/technical.md) |
+
+## Resultados
+
+| Dimensión | Métrica | Resultado |
+|---|---|---|
+| Calidad | Evaluación de punta a punta (30 casos): ruta y herramientas correctas | **30/30** |
+| Calidad | LLM-as-judge: relevancia / fidelidad a los datos / tono (1-5) | **5,00 / 5,00 / 4,80** |
+| Seguridad | Set adversarial: injection y fuera de tema bloqueados, sin falsos positivos | **16/16** |
+| Negocio | Contención (conversaciones sin ejecutivo) | **80%** |
+| Negocio | Conversión de conversaciones de venta a link de pago | **33%** |
+| Negocio | Ticket promedio de las ventas del bot | **$190.988** |
+| Eficiencia | Costo por conversación (precio de lista de Gemini) | **US$0,0011** |
+| Eficiencia | Latencia por respuesta, p50 / p90 | **9,9 s / 18,1 s** |
+
+Los KPIs de negocio vienen de 30 conversaciones simuladas contra el agente real: el comportamiento del
+agente, el costo y la latencia son reales; la mezcla de clientes es simulada, así que contención y
+conversión cambiarían con tráfico real.
+
+## Arquitectura
+
+```mermaid
+flowchart LR
+    WA[Cliente en WhatsApp] -->|mensaje| Meta[WhatsApp Cloud API]
+    Meta -->|webhook firmado| Hook[Webhook FastAPI]
+    Hook --> Mask[Enmascarar datos personales]
+    Mask --> Router{Router<br/>intención y señales}
+    Router -->|ventas| Sales[Subagente ventas]
+    Router -->|postventa| Post[Subagente postventa]
+    Router -->|FAQ| Faq[Subagente FAQ]
+    Router -->|reglas de derivación| Human[Ticket a ejecutivo]
+    Router -->|injection o fuera de tema| Guard[Respuesta fija]
+    Sales & Post & Faq -->|function calling| Commerce[API comercio VTEX-like]
+    Sales & Post & Faq -->|RAG| Vec[(pgvector<br/>políticas y catálogo)]
+    Sales & Post & Faq --> Out[Guardrail de salida<br/>precios respaldados]
+    Out -->|respuesta| Meta
+    Hook -.trazas.-> LF[Langfuse]
+    Hook -.memoria.-> PG[(Postgres<br/>checkpoints)]
+```
+
+Un router clasifica cada mensaje con salida estructurada y lo envía a un subagente con su propio prompt
+y **solo sus herramientas**. El estado de la conversación (carrito, historial, derivaciones) vive en
+Postgres, así que sobrevive a reinicios del servidor.
+
+## Decisiones de diseño
+
+| Decisión | Por qué |
+|---|---|
+| **El LLM detecta señales; el código decide** | El router extrae "pide una persona", "frustración alta", "amenaza legal"; las reglas que derivan son código testeable, acordable con Atención a Clientes. |
+| **Montos y fechas se calculan en código** | Las herramientas devuelven "$269.990" y "atrasado 3 días hábiles" ya calculados. Los LLM fallan en aritmética y no saben qué día es hoy. |
+| **El teléfono del cliente nunca es un parámetro del LLM** | Viene de la sesión de WhatsApp. El modelo no puede ser manipulado para consultar pedidos ajenos; un test lo verifica. |
+| **Reglas de negocio en la API, no en el prompt** | El plazo de 10 días para devolver o el dueño del pedido se validan en la API: una devolución inválida no se puede crear, diga lo que diga el modelo. |
+| **Guardrails en capas** | Entrada (datos personales, tarjetas, injection), herramientas con mínimo privilegio por subagente y salida (todo precio debe venir de una herramienta). |
+| **Lo obligatorio se fuerza por configuración** | "Consulta siempre la política" falló como instrucción de prompt; se resolvió obligando la llamada a la herramienta. |
+| **Evaluación antes de cambiar** | Cada cambio de prompt pasa por 30 casos de punta a punta con juez; la evaluación encontró 4 fallas que los tests unitarios no veían. |
+| **Costo a precio de lista** | Hoy se usa el tier gratuito, pero el KPI refleja lo que costaría en producción. |
 
 ## Stack
 
 | Capa | Tecnología |
 |---|---|
-| LLM | Gemini (Google Gen AI SDK, compatible con Vertex AI) |
-| Orquestación | LangGraph (router + subagentes + derivación humana) |
-| RAG | Postgres + pgvector (Supabase) |
-| Canal | WhatsApp Cloud API |
-| Backend | FastAPI en Render (Docker; mismo contenedor desplegable en Cloud Run) |
-| Comercio | API simulada con la forma de los endpoints de VTEX |
-| Calidad | Golden set + LLM-as-judge en CI, guardrails de entrada/salida |
-| Analítica | BigQuery + Looker Studio (resolución, conversión, ticket promedio, costo por conversación) |
+| LLM | Gemini (Google Gen AI SDK, mismo código para AI Studio y Vertex AI) con modelo de respaldo y timeout |
+| Orquestación | LangGraph: router, 3 subagentes, derivación a humano, guardrails |
+| RAG | Supabase Postgres + pgvector, `gemini-embedding-001`, búsqueda híbrida (filtros SQL + embeddings) |
+| Comercio | API simulada con la forma de VTEX (Catalog, Logistics, Checkout, OMS) + colección Postman |
+| Canal | WhatsApp Cloud API: webhook con firma HMAC, deduplicación, procesamiento en segundo plano |
+| Calidad | pytest (92 tests), golden set, set adversarial, LLM-as-judge, GitHub Actions |
+| Observabilidad | Langfuse: traza por mensaje con latencia, tokens y costo |
+| Analítica | BigQuery (vistas SQL de KPIs) + Looker Studio |
+| Despliegue | Docker en Render; memoria del agente en Postgres |
 
-## Datos
+## Estructura
 
-Todos los datos son sintéticos y reproducibles (semilla fija). No hay datos personales reales.
+```
+agent/            Router, subagentes, herramientas, guardrails, derivación, observabilidad
+channels/         Webhook y cliente de WhatsApp Cloud API
+commerce_api/     API de comercio con forma VTEX (FastAPI)
+rag/              Chunking, embeddings, indexación y búsqueda en pgvector
+db/               Migraciones SQL y carga de datos
+data/             Generadores de datos sintéticos y políticas de la tienda
+evals/            Golden set, set adversarial, evaluación del router y del agente con juez
+analytics/        Simulador de conversaciones, carga a BigQuery y vistas de KPIs
+docs/             Guía técnica, guía del dashboard, documentos de producto
+tests/            Tests unitarios (sin red ni LLM)
+```
 
-| Tabla | Filas | Descripción |
-|---|---|---|
-| `products` | 300 | Catálogo con reglas por tipo de producto, descuentos y quiebres de stock |
-| `customers` | 200 | Clientes con RUT y celular en formato WhatsApp (`569XXXXXXXX`) |
-| `orders` | 1.000 | Pedidos con estados del OMS de VTEX según antigüedad |
-| `order_items` | 1.391 | Ítems con el precio del momento de la compra |
+## Correr localmente
 
 ```bash
 uv sync
-uv run python data/generate_catalog.py
-uv run python data/generate_orders.py
-uv run python data/validate.py
-```
-
-### Base de datos (Supabase / Postgres)
-
-```bash
-cp .env.example .env                      # completar DATABASE_URL y GEMINI_API_KEY
-uv run python scripts/check_connections.py
-uv run python -m db.migrate                # aplica db/migrations/*.sql pendientes
-uv run python -m db.load_data              # carga los CSV con COPY (reemplaza el contenido)
-```
-
-Las restricciones del esquema (CHECK, llaves foráneas, UNIQUE) replican las reglas de `data/validate.py`
-y RLS está activo en todas las tablas para que la API REST pública de Supabase no exponga datos.
-
-### RAG (pgvector + embeddings de Gemini)
-
-```bash
-uv run python -m rag.indexer            # chunking + embeddings; solo procesa lo que cambió
-uv run python -m evals.retrieval_eval   # hit@1, hit@4 y MRR sobre preguntas reales
-```
-
-Políticas divididas por sección (22 chunks) y descripciones de productos, con `gemini-embedding-001`
-a 768 dimensiones e índice HNSW. Evaluación inicial de recuperación (16 preguntas):
-hit@1 = 0,88 · hit@4 = 1,00 · MRR = 0,93.
-
-## Agente (LangGraph + Gemini)
-
-```bash
+cp .env.example .env                                  # Gemini y Supabase
+uv run python -m db.migrate && uv run python -m db.load_data && uv run python -m rag.indexer
 uv run fastapi dev commerce_api/main.py --port 8001   # en otra terminal
-uv run python -m agent.cli                # conversación de ejemplo
-uv run python -m agent.cli --interactive  # conversar
+uv run python -m agent.cli --interactive
 ```
 
-Un router clasifica la intención con salida estructurada y deriva a un subagente con su propio prompt
-y solo sus herramientas ([diagrama](docs/agent_graph.md)):
+Tests y evaluaciones:
 
-| Subagente | Herramientas |
+```bash
+uv run pytest                          # 92 tests, sin red ni LLM
+uv run python -m evals.agent_eval      # 30 casos de punta a punta + juez
+```
+
+WhatsApp, despliegue, Langfuse y BigQuery: [docs/technical.md](docs/technical.md).
+
+## Limitaciones y próximos pasos
+
+| Hoy | A escala |
 |---|---|
-| Ventas | `search_products`, `check_stock`, `add_to_cart`, `search_policies` |
-| Postventa | `list_my_orders`, `get_order_status`, `request_return`, `search_policies` |
-| FAQ | `search_policies` |
+| Latencia p90 de 18 s; el router toma ~6 s solo para clasificar | Router con un modelo sin razonamiento o un clasificador propio; respuestas en streaming |
+| Tier gratuito de Gemini: 15 solicitudes por minuto por modelo | Vertex AI con cuota pagada; el SDK ya es compatible |
+| API de comercio simulada | Conectar VTEX real: solo cambia la URL base y las credenciales del adaptador |
+| Número de prueba de Meta (5 destinatarios) | Número verificado del negocio y plantillas aprobadas para mensajes salientes |
+| Bandeja de tickets en una tabla | Integración con la herramienta del equipo de atención (Zendesk, Freshdesk o similar) |
+| KPIs sobre conversaciones simuladas | Eventos de producción hacia BigQuery y metas acordadas con negocio |
+| Golden set escrito por el mismo autor | Casos escritos por Atención a Clientes y conversaciones reales anonimizadas |
 
-El teléfono del cliente viene de la sesión y nunca es un parámetro que el LLM pueda elegir.
-Modelo principal y de respaldo configurables (`CHAT_MODEL`, `FALLBACK_CHAT_MODEL`), con timeout.
+## Datos
 
-### Guardrails de entrada
-
-| Riesgo | Control | Dónde |
-|---|---|---|
-| Datos personales en el LLM, Postgres y tickets | RUT, tarjeta, email y celular se enmascaran con regex antes de entrar al estado | `agent/guardrails.py` |
-| Cliente envía su tarjeta por chat | Respuesta fija de seguridad, sin llamar al LLM | Nodo `guarded_reply` |
-| Prompt injection / fuera de tema | El router extrae la señal en su misma llamada; la respuesta es fija | `guard_reason()` |
-| Consultar pedidos de otra persona | El teléfono nunca es parámetro del LLM; la API valida dueño | Tools y API |
-
-```bash
-uv run python -m evals.router_eval adversarial_set   # 16/16: ataques, fuera de tema y falsos positivos
-```
-
-### Guardrails de salida
-
-Antes de enviar una respuesta, `agent/output_guard.py` verifica:
-- **Precios respaldados:** todo monto en pesos debe aparecer en un resultado de herramienta o en un mensaje
-  del cliente (incluye "700 lucas", "500 mil"). Si no, el subagente recibe una corrección y reintenta una vez;
-  si vuelve a fallar se envía una respuesta segura sin montos y cuenta como fallo.
-- **Nunca pedir datos de pago** (tarjeta, CVV, clave), salvo en advertencias ("nunca te pediremos...").
-
-### Derivación a atención humana
-
-| Disparador | Quién decide | Ejemplo |
-|---|---|---|
-| Pide una persona, amenaza legal, frustración alta, 2 fallos seguidos | Reglas en código (`handoff_reason`) sobre señales que extrae el router | "páseme con un ejecutivo", "voy al SERNAC" |
-| Lo indica la política | Subagente con la tool `escalate_to_human` | Producto con falla, pedido entregado que no llegó |
-| Proveedor LLM caído | Sistema | Todos los modelos fallan |
-
-Cada derivación crea un ticket en `handoff_tickets` con motivo, resumen y transcripción, y el bot queda
-en pausa para ese cliente hasta que el ejecutivo cierra el caso.
-
-```bash
-uv run python -m evals.router_eval   # exactitud del router sobre evals/golden_set.jsonl (30 casos)
-```
-
-### Evaluación del agente completo (CI)
-
-```bash
-uv run python -m evals.agent_eval   # golden set de punta a punta + LLM-as-judge; genera evals/report.md
-```
-
-| Métrica | Resultado | Umbral (falla el CI) |
-|---|---|---|
-| Ruta correcta | 100% | ≥ 90% |
-| Tools esperadas | 100% | ≥ 90% |
-| Derivaciones indebidas | 0 | - |
-| Relevancia / Fidelidad / Tono (juez, 1-5) | 4,97 / 5,00 / 4,83 | Fidelidad ≥ 4,0 |
-
-GitHub Actions corre los tests unitarios en cada push y la evaluación completa en cada Pull Request
-(consume cuota del LLM). El juez usa un modelo distinto al del agente para reducir el sesgo de autopreferencia.
-
-## Observabilidad (Langfuse)
-
-Cada mensaje de WhatsApp es una traza: router → subagente → tools → embeddings → guardrail de salida, con latencia
-por paso y tokens y costo por llamada a Gemini (precio de lista del tier pagado; el teléfono se envía anonimizado).
-
-| Mensaje de ejemplo | Latencia | Llamadas LLM | Tokens in / out | Costo |
-|---|---|---|---|---|
-| Búsqueda de producto | 22,4 s | 3 | 2.775 / 265 | US$0,0015 |
-| Política de despacho | 17,9 s | 3 | 3.105 / 168 | US$0,0014 |
-| Estado de pedido | 19,1 s | 4 | 7.726 / 183 | US$0,0028 |
-
-Costo promedio: **US$0,0019 por mensaje (~US$1,9 por 1.000 mensajes)**. Hallazgo: el router toma ~6 s de cada
-respuesta solo para clasificar; es el primer candidato a optimizar.
-
-## Despliegue (Render, plan gratuito)
-
-Un solo servicio Docker (`server.py`) con el webhook y la API de comercio montada en `/commerce`.
-La memoria del agente vive en Postgres (`PostgresSaver`), así que sobrevive a que Render suspenda la instancia.
-
-```bash
-uv run python -m deploy.render_env   # genera .env.render (gitignored) para pegar en Render > Environment
-```
-
-| Ajuste en Render | Valor |
-|---|---|
-| Runtime | Docker |
-| Instance type | Free (se suspende tras ~15 min sin tráfico; el primer mensaje tarda ~1 min) |
-| Health check | `/health` |
-| Callback URL en Meta | `https://<servicio>.onrender.com/webhook` |
-
-Las credenciales de la API de comercio se generan aleatorias en cada despliegue: en producción `/commerce` es público
-y las credenciales de desarrollo están en este repositorio.
-
-## Canal WhatsApp (Cloud API)
-
-```bash
-uv run uvicorn channels.whatsapp_webhook:app --port 8000
-```
-
-- `GET /webhook`: verificación de Meta (`hub.verify_token` → `hub.challenge`).
-- `POST /webhook`: valida la firma `X-Hub-Signature-256` (HMAC con el App Secret), responde 200 de inmediato
-  y procesa en segundo plano; deduplica por `message.id` y procesa en orden los mensajes de un mismo cliente.
-- Si un ejecutivo tiene el caso, el bot no responde. Audios e imágenes reciben un aviso de "solo texto".
-- Logs propios sin secretos (el access log de uvicorn se desactiva con `--no-access-log` porque escribe la URL completa).
-
-Desarrollo local con túnel:
-
-```bash
-uv run uvicorn channels.whatsapp_webhook:app --port 8000 --no-access-log
-cloudflared tunnel --url http://localhost:8000   # Callback URL en Meta: <url>/webhook
-```
-
-Configuración en Meta que suele faltar:
-1. En el formulario del webhook, el **Verify token** es `WHATSAPP_VERIFY_TOKEN`, no el access token.
-2. Suscribir el campo `messages` del webhook.
-3. Suscribir la cuenta de WhatsApp Business a la app (sin esto Meta verifica el webhook pero no envía mensajes):
-   `POST https://graph.facebook.com/v25.0/{WABA_ID}/subscribed_apps` con el access token.
-
-Token permanente (System User en Meta Business Settings), en este orden:
-1. Crear el System User y asignarle **todos** los activos antes de generar el token: la app, la
-   **WhatsApp account** y también la **Messaging account** (Messaging accounts > Linked accounts).
-   Sin la Messaging account, el token falla con `(#10) Viewer cannot access the provided Paid Message Account`.
-2. Generar el token: expiración *Never*, permisos `whatsapp_business_messaging` y `whatsapp_business_management`.
-3. Verificar antes de usarlo: `GET /debug_token` (tipo `SYSTEM_USER`, `expires_at = 0`) y un envío de prueba.
-
-## API de comercio (VTEX-like)
-
-```bash
-uv run fastapi dev commerce_api/main.py --port 8001   # docs en http://localhost:8001/docs
-uv run pytest
-```
-
-| Endpoint | Equivalente VTEX | Acceso |
-|---|---|---|
-| `GET /api/catalog_system/pub/products/search?ft=&fq=P[min TO max]&_from=&_to=` | Catalog API (legacy search) | Público |
-| `GET /api/logistics/pvt/inventory/skus/{skuId}` | Logistics API | `X-VTEX-API-AppKey` + `X-VTEX-API-AppToken` |
-| `POST /api/checkout/pub/orderForm` | Checkout API (crear carrito) | Público |
-| `GET /api/checkout/pub/orderForm/{orderFormId}` | Checkout API | Público |
-| `POST /api/checkout/pub/orderForm/{orderFormId}/items` | Checkout API (agregar ítems) | Público |
-| `GET /api/oms/pvt/orders/{orderId}` | OMS API | Credenciales |
-| `GET /api/oms/pvt/orders?q={teléfono\|email\|RUT}` | OMS API (listar) | Credenciales |
-| `POST /api/returns` | Propio (VTEX no lo trae nativo) | Credenciales |
-
-Montos de Checkout y OMS en centavos, como VTEX. Las reglas de devolución de `data/policies/devoluciones.md`
-se validan en la API y responden con códigos estables (`RETURN_WINDOW_EXPIRED`, `ORDER_NOT_OWNED`, etc.).
-
-Colección Postman con tests: [`postman/hogartec_commerce_api.postman_collection.json`](postman/hogartec_commerce_api.postman_collection.json).
+Todos los datos son sintéticos y reproducibles: catálogo de 300 productos, 200 clientes, 1.000 pedidos
+y las políticas de la tienda. No hay datos personales reales.
