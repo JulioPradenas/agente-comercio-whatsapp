@@ -14,3 +14,4 @@ wheels/
 .env.render
 evals/results.csv
 docs/linkedin/preview/
+.DS_Store
