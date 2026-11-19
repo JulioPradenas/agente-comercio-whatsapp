@@ -13,3 +13,4 @@ wheels/
 .env
 .env.render
 evals/results.csv
+docs/linkedin/preview/
