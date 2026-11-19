@@ -79,3 +79,67 @@ SELECT
 FROM `{dataset}.conversations`
 WHERE handed_off
 GROUP BY handoff_trigger;
+
+-- Embudo de ventas: en qué etapa se pierden las conversaciones de compra.
+CREATE OR REPLACE VIEW `{dataset}.kpi_sales_funnel` AS
+WITH sales_conversations AS (
+    SELECT
+        conversations.conversation_id,
+        conversations.converted,
+        LOGICAL_OR(turns.tools LIKE '%search_products%') AS searched,
+        LOGICAL_OR(turns.tools LIKE '%add_to_cart%') AS added_to_cart
+    FROM `{dataset}.conversations` AS conversations
+    JOIN `{dataset}.turns` AS turns
+        ON turns.conversation_id = conversations.conversation_id
+    WHERE conversations.sales_conversation
+    GROUP BY conversations.conversation_id, conversations.converted
+),
+funnel AS (
+    SELECT 1 AS step_order, '1. Consulta de compra' AS step, COUNT(*) AS conversations FROM sales_conversations
+    UNION ALL
+    SELECT 2, '2. Recibió recomendaciones', COUNTIF(searched) FROM sales_conversations
+    UNION ALL
+    SELECT 3, '3. Agregó al carrito', COUNTIF(added_to_cart) FROM sales_conversations
+    UNION ALL
+    SELECT 4, '4. Recibió link de pago', COUNTIF(converted) FROM sales_conversations
+)
+SELECT
+    step_order,
+    step,
+    conversations,
+    ROUND(SAFE_DIVIDE(conversations, FIRST_VALUE(conversations) OVER (ORDER BY step_order)), 3) AS share_of_start
+FROM funnel;
+
+-- Eficiencia por intención (nivel turno): latencia, llamadas al LLM, tokens y costo.
+CREATE OR REPLACE VIEW `{dataset}.kpi_efficiency_by_intent` AS
+SELECT
+    COALESCE(intent, 'guardrail') AS intent,
+    COUNT(*) AS turns,
+    APPROX_QUANTILES(latency_s, 100)[OFFSET(50)] AS latency_p50_s,
+    APPROX_QUANTILES(latency_s, 100)[OFFSET(90)] AS latency_p90_s,
+    ROUND(AVG(llm_calls), 2) AS avg_llm_calls,
+    ROUND(AVG(input_tokens)) AS avg_input_tokens,
+    ROUND(AVG(output_tokens)) AS avg_output_tokens,
+    ROUND(AVG(cost_usd), 6) AS avg_cost_per_turn_usd
+FROM `{dataset}.turns`
+GROUP BY intent;
+
+-- Calidad y seguridad: cómo termina cada conversación (una sola categoría por conversación).
+CREATE OR REPLACE VIEW `{dataset}.kpi_outcomes` AS
+WITH classified AS (
+    SELECT
+        CASE
+            WHEN handed_off THEN 'Derivada a ejecutivo'
+            WHEN guarded THEN 'Bloqueada por guardrail'
+            WHEN fallback THEN 'Respuesta de error'
+            WHEN converted THEN 'Venta (link de pago)'
+            ELSE 'Resuelta por el bot'
+        END AS outcome
+    FROM `{dataset}.conversations`
+)
+SELECT
+    outcome,
+    COUNT(*) AS conversations,
+    ROUND(COUNT(*) / SUM(COUNT(*)) OVER (), 3) AS share
+FROM classified
+GROUP BY outcome;

@@ -1,0 +1,627 @@
+<title>Dashboard HogarTec Looker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: guía de una columna (texto ~68ch) con mockups a ancho completo; cada página del dashboard = una sección. */
+:root {
+  --bg: #f6f6f3;
+  --panel: #ffffff;
+  --ink: #16181d;
+  --ink-2: #4c4f57;
+  --ink-3: #7c7f87;
+  --rule: #e2e1dc;
+  --accent: #2a78d6;
+  --accent-soft: #e8f0fb;
+  --code-bg: #f0efea;
+  --good: #0a7d0a;
+  --bad: #c03030;
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141517; --panel: #1c1d20; --ink: #ecebe6; --ink-2: #b9b8b1; --ink-3: #8d8c86;
+    --rule: #2f3034; --accent: #5598e7; --accent-soft: #1d2a3b; --code-bg: #24252a;
+    --good: #3cc23c; --bad: #ef6b6b; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141517; --panel: #1c1d20; --ink: #ecebe6; --ink-2: #b9b8b1; --ink-3: #8d8c86;
+  --rule: #2f3034; --accent: #5598e7; --accent-soft: #1d2a3b; --code-bg: #24252a;
+  --good: #3cc23c; --bad: #ef6b6b; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 80px;
+}
+.wrap { max-width: 1160px; margin: 0 auto; display: grid; gap: 56px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(30px, 4.4vw, 46px); font-weight: 700; }
+h2 { font-size: clamp(22px, 2.8vw, 30px); font-weight: 600; }
+h3 { font-size: 18px; font-weight: 600; }
+p { margin: 0; max-width: 70ch; color: var(--ink-2); }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.stack { display: grid; gap: 14px; }
+.stack-lg { display: grid; gap: 24px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; color: var(--ink); }
+
+header.hero { display: grid; gap: 18px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--rule); color: var(--ink-2); }
+.chip strong { color: var(--ink); font-weight: 600; }
+
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; }
+nav.toc a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--rule); }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); border-color: var(--accent); outline: none; }
+
+.steps { counter-reset: step; display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; max-width: 78ch; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 28px 1fr; gap: 10px; color: var(--ink-2); }
+.steps li::before { content: counter(step); font-family: var(--font-mono); font-size: 12px; font-weight: 500; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); margin-top: 1px; }
+.steps li strong { color: var(--ink); font-weight: 600; }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 720px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; background: var(--panel); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; }
+
+.tokens { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.token { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: center; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 10px; min-width: 0; }
+.swatch { width: 40px; height: 40px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.08); }
+.token b { display: block; font-size: 13px; font-weight: 600; }
+.token span { display: block; font-size: 12px; color: var(--ink-3); }
+.token .mono { color: var(--ink-2); }
+
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.note { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 6px; min-width: 0; }
+.note h3 { font-size: 15px; }
+.note p { font-size: 14px; }
+
+.mockup-frame { overflow-x: auto; border-radius: 12px; border: 1px solid var(--rule); background: #e9e9e4; padding: 14px; }
+.mockup-frame svg { display: block; width: 100%; min-width: 760px; height: auto; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06); }
+.caption { font-size: 13px; color: var(--ink-3); }
+
+section.page { display: grid; gap: 22px; padding-top: 8px; border-top: 1px solid var(--rule); }
+.page-head { display: grid; gap: 8px; }
+.question { font-size: 16px; color: var(--ink); font-weight: 500; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">Guía de construcción · Looker Studio</span>
+  <h1>Dashboard del agente HogarTec</h1>
+  <p>Instrucciones para construir, en Looker Studio, el dashboard de KPIs del agente de WhatsApp: cuatro páginas, sus componentes, la fuente de cada número y el sistema visual. Cada página trae un mockup de referencia dibujado con los datos reales que hoy están en BigQuery.</p>
+  <div class="chips">
+    <span class="chip">Proyecto <strong>torre-control-portafolio</strong></span>
+    <span class="chip">Dataset <strong>hogartec_analytics</strong></span>
+    <span class="chip"><strong>7</strong> vistas de KPIs</span>
+    <span class="chip"><strong>4</strong> páginas</span>
+    <span class="chip">Datos: <strong>30 conversaciones simuladas</strong></span>
+  </div>
+  <nav class="toc" aria-label="Contenido">
+    <a href="#como-usar">Cómo usar la guía</a>
+    <a href="#sistema">Sistema visual</a>
+    <a href="#datos">Fuentes de datos</a>
+    <a href="#configuracion">Configuración del reporte</a>
+    <a href="#p1">1 · Resumen ejecutivo</a>
+    <a href="#p2">2 · Ventas y conversión</a>
+    <a href="#p3">3 · Atención y derivación</a>
+    <a href="#p4">4 · Eficiencia y costo</a>
+    <a href="#checklist">Antes de compartir</a>
+  </nav>
+</header>
+
+<section id="como-usar" class="stack">
+  <h2>Cómo usar esta guía</h2>
+  <p>Construye en este orden: primero el tema y el tamaño de página, luego conecta las siete vistas como fuentes de datos, y recién después arma las páginas. Así cada gráfico hereda los colores y formatos correctos y no hay que corregirlos uno por uno.</p>
+  <p>Los KPIs ya están calculados en las vistas de BigQuery. En Looker Studio no crees campos calculados para contención, conversión o costo: si la definición de un KPI cambia, se cambia en <code>analytics/sql/kpi_views.sql</code> y el dashboard se actualiza solo.</p>
+  <p>Los nombres de menús de Looker Studio pueden variar levemente entre versiones. Las metas que aparecen (70% de contención, 25% de conversión, 15 s de latencia p90) son <strong>propuestas</strong> para el piloto, no datos.</p>
+</section>
+
+<section id="sistema" class="stack-lg">
+  <div class="stack">
+    <span class="eyebrow">Sistema visual</span>
+    <h2>Colores, tipografía y grilla</h2>
+    <p>Paleta validada para daltonismo (protanopia, deuteranopia y tritanopia) con el validador de la skill de visualización. Cada color tiene un único trabajo: el azul identifica ventas y marca la página activa; verde, naranja y violeta identifican intenciones y resultados; los colores de estado solo se usan para metas cumplidas o no cumplidas, siempre con texto.</p>
+  </div>
+
+  <div class="stack">
+    <h3>Superficies y texto (Tema → Personalizar)</h3>
+    <div class="tokens">
+      <div class="token"><div class="swatch" style="background:#f4f4f1"></div><div><b>Fondo de página</b><span class="mono">#F4F4F1</span></div></div>
+      <div class="token"><div class="swatch" style="background:#fcfcfb"></div><div><b>Tarjetas y gráficos</b><span class="mono">#FCFCFB</span></div></div>
+      <div class="token"><div class="swatch" style="background:#0b0b0b"></div><div><b>Texto principal</b><span class="mono">#0B0B0B</span></div></div>
+      <div class="token"><div class="swatch" style="background:#52514e"></div><div><b>Texto secundario y ejes</b><span class="mono">#52514E</span></div></div>
+      <div class="token"><div class="swatch" style="background:#e5e4df"></div><div><b>Bordes y líneas de grilla</b><span class="mono">#E5E4DF</span></div></div>
+      <div class="token"><div class="swatch" style="background:#11203a"></div><div><b>Banda de encabezado</b><span class="mono">#11203A</span></div></div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h3>Colores de datos (en este orden, sin repetir)</h3>
+    <div class="tokens">
+      <div class="token"><div class="swatch" style="background:#2a78d6"></div><div><b>Ventas · venta lograda</b><span class="mono">#2A78D6</span></div></div>
+      <div class="token"><div class="swatch" style="background:#eb6834"></div><div><b>Postventa · derivada</b><span class="mono">#EB6834</span></div></div>
+      <div class="token"><div class="swatch" style="background:#1baf7a"></div><div><b>FAQ · resuelta por el bot</b><span class="mono">#1BAF7A</span></div></div>
+      <div class="token"><div class="swatch" style="background:#6250d6"></div><div><b>Bloqueada por guardrail</b><span class="mono">#6250D6</span></div></div>
+      <div class="token"><div class="swatch" style="background:linear-gradient(90deg,#86b6ef,#5598e7,#2a78d6,#1c5cab)"></div><div><b>Embudo (azul claro → oscuro)</b><span class="mono">#86B6EF · #5598E7 · #2A78D6 · #1C5CAB</span></div></div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h3>Estado de metas (siempre con ✓ o ✗ y texto, nunca solo color)</h3>
+    <div class="tokens">
+      <div class="token"><div class="swatch" style="background:#0ca30c"></div><div><b>Meta cumplida</b><span class="mono">#0CA30C</span></div></div>
+      <div class="token"><div class="swatch" style="background:#fab219"></div><div><b>En riesgo (±10% de la meta)</b><span class="mono">#FAB219</span></div></div>
+      <div class="token"><div class="swatch" style="background:#d03b3b"></div><div><b>Meta no cumplida</b><span class="mono">#D03B3B</span></div></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="note"><h3>Tipografía</h3><p>Fuente del reporte: <strong>Roboto</strong> (disponible en Looker Studio). Títulos de página 22 px semibold; títulos de gráfico 14 px semibold; valores de KPI 30 px; etiquetas y ejes 11–12 px en texto secundario.</p></div>
+    <div class="note"><h3>Página y grilla</h3><p>Lienzo personalizado de <strong>1280 × 900 px</strong>. Margen exterior 24 px, separación entre tarjetas 16 px, grilla de 12 columnas. Activa <em>Ajustar a la grilla</em> en Ver.</p></div>
+    <div class="note"><h3>Tarjetas</h3><p>Fondo #FCFCFB, borde 1 px #E5E4DF, radio 8 px, sin sombra. El encabezado de cada página es una banda azul oscuro de 64 px con el título en blanco y los filtros a la derecha.</p></div>
+    <div class="note"><h3>Gráficos</h3><p>Grilla horizontal tenue (#E5E4DF), sin grilla vertical, ejes sin línea. Etiquetas de datos visibles en barras y apilados (el verde tiene bajo contraste con el fondo y necesita su número escrito). Nunca dos ejes Y en el mismo gráfico.</p></div>
+  </div>
+</section>
+
+<section id="datos" class="stack-lg">
+  <div class="stack">
+    <span class="eyebrow">Fuentes de datos</span>
+    <h2>Las siete vistas de BigQuery</h2>
+    <p>Agrega cada vista como una fuente de datos separada: <strong>Recurso → Administrar fuentes de datos agregadas → Agregar una fuente → BigQuery → Mis proyectos → torre-control-portafolio → hogartec_analytics</strong>. Al agregar cada una, ajusta el formato de los campos como indica la última columna.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Vista</th><th>Una fila por</th><th>Campos principales</th><th>Página</th><th>Formato de campos</th></tr></thead>
+      <tbody>
+        <tr><td><code>kpi_summary</code></td><td>Todo el período</td><td>containment_rate, handoff_rate, sales_conversion_rate, avg_ticket_clp, cost_per_conversation_usd, latency_p50_s, latency_p90_s</td><td>1, 3, 4</td><td>*_rate → Porcentaje · avg_ticket_clp → Moneda CLP · cost_* → Moneda USD (4 decimales)</td></tr>
+        <tr><td><code>kpi_daily</code></td><td>Día</td><td>conversation_date, conversations, resolved_conversations, handed_off_conversations, containment_rate, conversions, cost_usd</td><td>1</td><td>conversation_date → Fecha · containment_rate → Porcentaje</td></tr>
+        <tr><td><code>kpi_by_intent</code></td><td>Intención</td><td>first_intent, conversations, containment_rate, handoff_rate, cost_per_conversation_usd, avg_latency_s</td><td>1, 3</td><td>*_rate → Porcentaje</td></tr>
+        <tr><td><code>kpi_outcomes</code></td><td>Resultado</td><td>outcome, conversations, share</td><td>1, 3</td><td>share → Porcentaje</td></tr>
+        <tr><td><code>kpi_sales_funnel</code></td><td>Etapa del embudo</td><td>step_order, step, conversations, share_of_start</td><td>2</td><td>share_of_start → Porcentaje</td></tr>
+        <tr><td><code>kpi_handoff_reasons</code></td><td>Motivo de derivación</td><td>handoff_trigger, conversations, share</td><td>3</td><td>share → Porcentaje</td></tr>
+        <tr><td><code>kpi_efficiency_by_intent</code></td><td>Intención (nivel turno)</td><td>intent, turns, latency_p50_s, latency_p90_s, avg_llm_calls, avg_input_tokens, avg_output_tokens, avg_cost_per_turn_usd</td><td>4</td><td>avg_cost_per_turn_usd → Moneda USD (6 decimales)</td></tr>
+        <tr><td><code>conversations</code> (tabla)</td><td>Conversación</td><td>conversation_id, started_at, persona, first_intent, converted, cart_total_clp, cost_usd</td><td>2</td><td>cart_total_clp → Moneda CLP · started_at → Fecha y hora</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="configuracion" class="stack-lg">
+  <div class="stack">
+    <span class="eyebrow">Una sola vez, antes de las páginas</span>
+    <h2>Configuración del reporte</h2>
+  </div>
+  <ol class="steps">
+    <li><span><strong>Crear el reporte:</strong> en lookerstudio.google.com, <em>Crear → Informe</em>. Cuando pida datos, agrega <code>kpi_summary</code>. Renombra el reporte a <em>Agente HogarTec · KPIs</em>.</span></li>
+    <li><span><strong>Tamaño de página:</strong> <em>Archivo → Configuración del informe</em> (o el panel <em>Tema y diseño → Diseño</em>) → Tamaño del lienzo <em>Personalizado</em>, 1280 × 900.</span></li>
+    <li><span><strong>Tema:</strong> <em>Tema y diseño → Tema → Personalizar</em>. Fondo de página #F4F4F1, fuente Roboto, color de texto #0B0B0B, color de acento #2A78D6. En <em>Paleta de gráficos</em>, carga los colores de datos en este orden: #2A78D6, #EB6834, #1BAF7A, #6250D6.</span></li>
+    <li><span><strong>Estilo de componente por defecto:</strong> en el mismo panel, fondo de componente #FCFCFB, borde 1 px #E5E4DF, radio 8, sin sombra; grilla #E5E4DF.</span></li>
+    <li><span><strong>Fuentes de datos:</strong> agrega las siete vistas y la tabla <code>conversations</code> con los formatos de la tabla anterior.</span></li>
+    <li><span><strong>Encabezado reutilizable:</strong> en la página 1 dibuja un rectángulo de 1280 × 64 px (#11203A) con el título en Roboto 22 px blanco. Selecciónalo junto con los filtros y usa <em>Organizar → Nivel de informe</em> para que aparezca en todas las páginas. Cambia el texto del título en cada página.</span></li>
+    <li><span><strong>Filtros:</strong> agrega un <em>Control de período</em> (Insertar → Control de período) en el encabezado. Solo filtra las fuentes con fecha (<code>kpi_daily</code> y <code>conversations</code>); las vistas agregadas muestran todo el período, y por eso cada tarjeta indica "Período completo".</span></li>
+    <li><span><strong>Navegación:</strong> <em>Tema y diseño → Diseño → Navegación: lateral izquierda</em>. Nombra las páginas igual que en esta guía.</span></li>
+  </ol>
+</section>
+
+<section id="p1" class="page">
+  <div class="page-head">
+    <span class="pill">Página 1</span>
+    <h2>Resumen ejecutivo</h2>
+    <p class="question">¿El bot está cumpliendo su trabajo? Contención, conversión, ticket, costo y velocidad en una pantalla.</p>
+  </div>
+  <div class="mockup-frame"><svg id="m1" viewBox="0 0 1280 900" role="img" aria-label="Mockup de la página Resumen ejecutivo"></svg></div>
+  <p class="caption">Mockup con datos reales de BigQuery (30 conversaciones simuladas, 22 oct – 20 nov 2026). Pasa el cursor sobre las barras para ver el valor.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Componente</th><th>Tipo en Looker</th><th>Fuente</th><th>Dimensión / Métrica</th><th>Estilo</th></tr></thead>
+      <tbody>
+        <tr><td>A</td><td>6 tarjetas de KPI</td><td>Tarjeta de resultados (Scorecard)</td><td><code>kpi_summary</code> (las 5 primeras) · <code>kpi_daily</code> (Conversaciones)</td><td>conversations · containment_rate · sales_conversion_rate · avg_ticket_clp · cost_per_conversation_usd · latency_p90_s</td><td>205 × 120 px. Valor 30 px. Debajo, un cuadro de texto con la meta y ✓/✗ en color de estado.</td></tr>
+        <tr><td>B</td><td>Conversaciones por día</td><td>Gráfico de columnas apiladas</td><td><code>kpi_daily</code></td><td>Dimensión conversation_date · Métricas resolved_conversations, handed_off_conversations</td><td>Resueltas #1BAF7A, derivadas #EB6834. Leyenda arriba. Separación entre barras 30%.</td></tr>
+        <tr><td>C</td><td>Cómo terminan las conversaciones</td><td>Gráfico de barras horizontal</td><td><code>kpi_outcomes</code></td><td>Dimensión outcome · Métrica conversations (orden descendente)</td><td>Color por dimensión: resuelta #1BAF7A, venta #2A78D6, derivada #EB6834, guardrail #6250D6. Etiquetas de datos con %.</td></tr>
+        <tr><td>D</td><td>Contención por intención</td><td>Barras horizontales 100% apiladas</td><td><code>kpi_by_intent</code></td><td>Dimensión first_intent · Métricas containment_rate, handoff_rate</td><td>Contenida #1BAF7A, derivada #EB6834. Etiquetas visibles. Ordena por conversations.</td></tr>
+        <tr><td>E</td><td>Lectura del período</td><td>Cuadro de texto</td><td>—</td><td>Tres hallazgos escritos a mano y actualizados en cada revisión</td><td>Texto 13 px, títulos 14 px semibold.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="p2" class="page">
+  <div class="page-head">
+    <span class="pill">Página 2</span>
+    <h2>Ventas y conversión</h2>
+    <p class="question">¿Dónde se pierden las ventas que empiezan por WhatsApp y cuánto vale cada una?</p>
+  </div>
+  <div class="mockup-frame"><svg id="m2" viewBox="0 0 1280 900" role="img" aria-label="Mockup de la página Ventas y conversión"></svg></div>
+  <p class="caption">El embudo muestra la caída más grande entre "recibió recomendaciones" (92%) y "agregó al carrito" (33%).</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Componente</th><th>Tipo en Looker</th><th>Fuente</th><th>Dimensión / Métrica</th><th>Estilo</th></tr></thead>
+      <tbody>
+        <tr><td>A</td><td>4 tarjetas de ventas</td><td>Tarjeta de resultados</td><td><code>kpi_sales_funnel</code> · <code>kpi_summary</code></td><td>Conversaciones de venta (etapa 1) · conversión · ventas logradas (etapa 4) · ticket promedio</td><td>Mismas medidas que la página 1. Para filtrar una etapa, usa un filtro de componente <code>step_order = 1</code> (o 4).</td></tr>
+        <tr><td>B</td><td>Embudo de ventas</td><td>Gráfico de barras horizontal</td><td><code>kpi_sales_funnel</code></td><td>Dimensión step · Métrica conversations · Orden step_order ascendente</td><td>Color por etapa con el azul ordinal (#86B6EF → #1C5CAB). Etiqueta con conversaciones y share_of_start. Anota la caída mayor con un cuadro de texto.</td></tr>
+        <tr><td>C</td><td>Conversión por perfil de cliente</td><td>Tabla</td><td><code>conversations</code></td><td>Dimensión persona · Métricas Recuento de conversation_id, SUM(converted)</td><td>Filtro de componente <code>sales_conversation = true</code>. Barras dentro de la celda en la columna de ventas.</td></tr>
+        <tr><td>D</td><td>Ventas logradas</td><td>Tabla</td><td><code>conversations</code></td><td>conversation_id, started_at, cart_total_clp, cost_usd</td><td>Filtro <code>converted = true</code>. Orden por started_at descendente. cart_total_clp en CLP.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="p3" class="page">
+  <div class="page-head">
+    <span class="pill">Página 3</span>
+    <h2>Atención y derivación</h2>
+    <p class="question">¿Cuánta atención absorbe el bot, qué le llega al equipo humano y qué bloquean los guardrails?</p>
+  </div>
+  <div class="mockup-frame"><svg id="m3" viewBox="0 0 1280 900" role="img" aria-label="Mockup de la página Atención y derivación"></svg></div>
+  <p class="caption">La baja contención de FAQ no es un error del bot: ahí caen los mensajes "quiero hablar con una persona", que se derivan correctamente.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Componente</th><th>Tipo en Looker</th><th>Fuente</th><th>Dimensión / Métrica</th><th>Estilo</th></tr></thead>
+      <tbody>
+        <tr><td>A</td><td>4 tarjetas de atención</td><td>Tarjeta de resultados</td><td><code>kpi_summary</code> · <code>kpi_outcomes</code></td><td>containment_rate · handoff_rate · conversaciones bloqueadas por guardrail · respuestas de error</td><td>Para bloqueos y errores usa <code>kpi_outcomes</code> con filtro de componente por outcome.</td></tr>
+        <tr><td>B</td><td>Contención por intención</td><td>Barras horizontales 100% apiladas</td><td><code>kpi_by_intent</code></td><td>Dimensión first_intent · Métricas containment_rate, handoff_rate</td><td>Igual que la página 1, a mayor tamaño, con nota explicativa al costado.</td></tr>
+        <tr><td>C</td><td>Motivos de derivación</td><td>Gráfico de barras horizontal</td><td><code>kpi_handoff_reasons</code></td><td>Dimensión handoff_trigger · Métrica conversations</td><td>Un solo color (#EB6834): es una magnitud, no categorías a distinguir. Renombra los valores con un campo de texto: router_rule → "Regla del router", agent_policy → "Política del subagente", system_failure → "Falla del proveedor".</td></tr>
+        <tr><td>D</td><td>Detalle por intención</td><td>Tabla con mapa de calor</td><td><code>kpi_by_intent</code></td><td>first_intent, conversations, containment_rate, handoff_rate, avg_latency_s</td><td>Mapa de calor solo en containment_rate (verde de un tono). Encabezados en español.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="p4" class="page">
+  <div class="page-head">
+    <span class="pill">Página 4</span>
+    <h2>Eficiencia y costo</h2>
+    <p class="question">¿Cuánto cuesta y cuánto tarda cada tipo de consulta, y dónde conviene optimizar?</p>
+  </div>
+  <div class="mockup-frame"><svg id="m4" viewBox="0 0 1280 900" role="img" aria-label="Mockup de la página Eficiencia y costo"></svg></div>
+  <p class="caption">Ventas es la intención más cara y lenta: usa más tokens de entrada porque la búsqueda de productos devuelve 6 productos con sus especificaciones.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Componente</th><th>Tipo en Looker</th><th>Fuente</th><th>Dimensión / Métrica</th><th>Estilo</th></tr></thead>
+      <tbody>
+        <tr><td>A</td><td>4 tarjetas de eficiencia</td><td>Tarjeta de resultados</td><td><code>kpi_summary</code> · <code>conversations</code></td><td>cost_per_conversation_usd · costo por 1.000 conversaciones (campo: cost_per_conversation_usd × 1000) · latency_p50_s · latency_p90_s</td><td>La latencia p90 muestra la meta (15 s) y ✗ en rojo mientras no se cumpla.</td></tr>
+        <tr><td>B</td><td>Latencia por intención</td><td>Gráfico de barras (columnas agrupadas)</td><td><code>kpi_efficiency_by_intent</code></td><td>Dimensión intent · Métricas latency_p50_s, latency_p90_s</td><td>p50 #2A78D6, p90 #EB6834. Línea de referencia constante en 15 s ("Meta p90"). Excluye intent = guardrail con un filtro.</td></tr>
+        <tr><td>C</td><td>Costo promedio por turno</td><td>Gráfico de barras horizontal</td><td><code>kpi_efficiency_by_intent</code></td><td>Dimensión intent · Métrica avg_cost_per_turn_usd</td><td>Un color (#2A78D6). Formato USD con 6 decimales.</td></tr>
+        <tr><td>D</td><td>Tokens por turno</td><td>Barras horizontales apiladas</td><td><code>kpi_efficiency_by_intent</code></td><td>Dimensión intent · Métricas avg_input_tokens, avg_output_tokens</td><td>Entrada #2A78D6, salida #EB6834. Misma unidad, por eso se pueden apilar.</td></tr>
+        <tr><td>E</td><td>Detalle de eficiencia</td><td>Tabla</td><td><code>kpi_efficiency_by_intent</code></td><td>intent, turns, avg_llm_calls, latency_p50_s, latency_p90_s, avg_cost_per_turn_usd</td><td>Números alineados a la derecha.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="checklist" class="stack-lg">
+  <div class="stack">
+    <span class="eyebrow">Antes de compartir</span>
+    <h2>Lista de revisión</h2>
+  </div>
+  <ol class="steps">
+    <li><span><strong>Cada número coincide con BigQuery:</strong> contención 80,0%, conversión 33,3%, ticket $190.988, costo US$0,0011, p90 18,1 s.</span></li>
+    <li><span><strong>Ningún gráfico usa dos ejes Y.</strong> Si dos medidas tienen escalas distintas, van en gráficos separados.</span></li>
+    <li><span><strong>Los colores siguen a la categoría, no a la posición:</strong> ventas es azul en todas las páginas, aunque un filtro deje menos barras.</span></li>
+    <li><span><strong>Las metas se leen sin color:</strong> cada estado lleva ✓ o ✗ y el texto de la meta.</span></li>
+    <li><span><strong>El pie de página aclara la fuente:</strong> "Datos: 30 conversaciones simuladas contra el agente real · BigQuery hogartec_analytics". Los datos simulados nunca se presentan como clientes reales.</span></li>
+    <li><span><strong>Compartir:</strong> <em>Compartir → Administrar acceso</em> con "Cualquier persona con el vínculo puede ver". El visor no necesita acceso a BigQuery si las fuentes usan las credenciales del propietario (opción por defecto).</span></li>
+    <li><span><strong>Las tablas de BigQuery Sandbox expiran a los 60 días.</strong> Para mantener el dashboard vivo, vuelve a correr <code>uv run python -m analytics.load_bigquery</code> antes de esa fecha.</span></li>
+  </ol>
+</section>
+
+</div>
+
+<script>
+// Mockups dibujados a escala con los datos reales de BigQuery (vistas hogartec_analytics).
+// Colores fijos a propósito: representan el dashboard de Looker, que usa tema claro.
+const C = {
+  page: "#f4f4f1", card: "#fcfcfb", border: "#e5e4df", grid: "#ebeae5", ink: "#0b0b0b", ink2: "#52514e", ink3: "#8a8984",
+  head: "#11203a", headInk: "#ffffff", headInk2: "#a9b7cf",
+  blue: "#2a78d6", orange: "#eb6834", aqua: "#1baf7a", violet: "#6250d6",
+  funnel: ["#86b6ef", "#5598e7", "#2a78d6", "#1c5cab"],
+  good: "#0ca30c", warn: "#fab219", bad: "#d03b3b"
+};
+const FONT = "Roboto, Inter, system-ui, sans-serif";
+const NS = "http://www.w3.org/2000/svg";
+
+function el(tag, attrs, parent, text) {
+  const node = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  if (text !== undefined) node.textContent = text;
+  if (parent) parent.appendChild(node);
+  return node;
+}
+const txt = (p, x, y, s, o = {}) => el("text", { x, y, "font-family": FONT, "font-size": o.size || 12, fill: o.fill || C.ink2,
+  "font-weight": o.weight || 400, "text-anchor": o.anchor || "start", "dominant-baseline": o.base || "auto" }, p, s);
+const tip = (node, s) => el("title", {}, node, s);
+const fmtPct = v => (v * 100).toFixed(1).replace(".", ",") + "%";
+const fmtClp = v => "$" + Math.round(v).toLocaleString("es-CL");
+
+function card(p, x, y, w, h, title, sub) {
+  el("rect", { x, y, width: w, height: h, rx: 8, fill: C.card, stroke: C.border }, p);
+  if (title) txt(p, x + 16, y + 26, title, { size: 14, weight: 600, fill: C.ink });
+  if (sub) txt(p, x + w - 16, y + 26, sub, { size: 11, fill: C.ink3, anchor: "end" });
+}
+
+function header(svg, title, page) {
+  el("rect", { x: 0, y: 0, width: 1280, height: 900, fill: C.page }, svg);
+  el("rect", { x: 0, y: 0, width: 1280, height: 64, fill: C.head }, svg);
+  txt(svg, 24, 40, "Agente HogarTec", { size: 13, fill: C.headInk2, weight: 500 });
+  txt(svg, 150, 40, "·  " + title, { size: 20, fill: C.headInk, weight: 600 });
+  // filtros
+  el("rect", { x: 900, y: 16, width: 220, height: 32, rx: 6, fill: "#1d3157", stroke: "#2c4573" }, svg);
+  txt(svg, 914, 37, "📅  22 oct 2026 – 20 nov 2026", { size: 12, fill: C.headInk });
+  el("rect", { x: 1132, y: 16, width: 124, height: 32, rx: 6, fill: "#1d3157", stroke: "#2c4573" }, svg);
+  txt(svg, 1146, 37, "Intención: Todas ▾", { size: 12, fill: C.headInk });
+  txt(svg, 24, 888, "Datos: 30 conversaciones simuladas contra el agente real · BigQuery torre-control-portafolio.hogartec_analytics · Página " + page + " de 4", { size: 10.5, fill: C.ink3 });
+}
+
+function scorecard(p, x, y, w, label, value, note, status) {
+  card(p, x, y, w, 120);
+  txt(p, x + 16, y + 28, label, { size: 12, fill: C.ink2, weight: 500 });
+  txt(p, x + 16, y + 70, value, { size: 30, fill: C.ink, weight: 600 });
+  if (note) {
+    const color = status === "good" ? C.good : status === "bad" ? C.bad : C.ink3;
+    const mark = status === "good" ? "✓ " : status === "bad" ? "✗ " : "";
+    txt(p, x + 16, y + 100, mark + note, { size: 11.5, fill: color, weight: status ? 600 : 400 });
+  }
+}
+
+function legend(p, x, y, items) {
+  let cx = x;
+  items.forEach(([label, color]) => {
+    el("rect", { x: cx, y: y - 9, width: 10, height: 10, rx: 2, fill: color }, p);
+    txt(p, cx + 15, y, label, { size: 11.5, fill: C.ink2 });
+    cx += 22 + label.length * 6.4;
+  });
+}
+
+// Columnas apiladas por día (eje Y entero, 0..max)
+function stackedColumns(p, x, y, w, h, rows, series, yMax) {
+  const ticks = [0, 1, 2, 3];
+  ticks.forEach(t => {
+    const ty = y + h - (t / yMax) * h;
+    el("line", { x1: x, x2: x + w, y1: ty, y2: ty, stroke: C.grid }, p);
+    txt(p, x - 8, ty + 4, String(t), { size: 10.5, anchor: "end", fill: C.ink3 });
+  });
+  const step = w / rows.length, bw = step * 0.62;
+  rows.forEach((r, i) => {
+    let base = y + h;
+    const bx = x + i * step + (step - bw) / 2;
+    series.forEach(([key, color, label]) => {
+      const v = r[key]; if (!v) return;
+      const bh = (v / yMax) * h;
+      const rect = el("rect", { x: bx, y: base - bh + 1, width: bw, height: bh - 2, rx: 2, fill: color }, p);
+      tip(rect, `${r.label}: ${v} ${label.toLowerCase()}`);
+      base -= bh;
+    });
+    if (i % 3 === 0) txt(p, bx + bw / 2, y + h + 16, r.label, { size: 10, anchor: "middle", fill: C.ink3 });
+  });
+}
+
+// Barras horizontales con etiqueta de valor
+function hbars(p, x, y, w, rows, opts = {}) {
+  const max = opts.max || Math.max(...rows.map(r => r.value));
+  const labelW = opts.labelW || 170, barH = opts.barH || 22, gap = opts.gap || 16;
+  rows.forEach((r, i) => {
+    const by = y + i * (barH + gap);
+    txt(p, x, by + barH / 2 + 4, r.label, { size: 12, fill: C.ink2 });
+    const bw = Math.max(2, ((w - labelW - 70) * r.value) / max);
+    el("rect", { x: x + labelW, y: by, width: w - labelW - 70, height: barH, rx: 4, fill: "#f0efea" }, p);
+    const bar = el("rect", { x: x + labelW, y: by, width: bw, height: barH, rx: 4, fill: r.color }, p);
+    tip(bar, `${r.label}: ${r.text}`);
+    txt(p, x + labelW + bw + 8, by + barH / 2 + 4, r.text, { size: 12, fill: C.ink, weight: 600 });
+  });
+}
+
+// Barras 100% apiladas (contenida / derivada)
+function hundredBars(p, x, y, w, rows) {
+  const labelW = 120, barH = 26, gap = 18, bw = w - labelW;
+  rows.forEach((r, i) => {
+    const by = y + i * (barH + gap);
+    txt(p, x, by + barH / 2 + 4, r.label, { size: 12, fill: C.ink2 });
+    const a = bw * r.a, b = bw * r.b;
+    if (r.a > 0) { const s = el("rect", { x: x + labelW, y: by, width: Math.max(0, a - 1), height: barH, rx: 3, fill: C.aqua }, p); tip(s, `${r.label}: contenida ${fmtPct(r.a)}`); }
+    if (r.b > 0) { const s = el("rect", { x: x + labelW + a + 1, y: by, width: Math.max(0, b - 1), height: barH, rx: 3, fill: C.orange }, p); tip(s, `${r.label}: derivada ${fmtPct(r.b)}`); }
+    if (r.a >= 0.18) txt(p, x + labelW + 8, by + barH / 2 + 4, fmtPct(r.a), { size: 11.5, fill: "#ffffff", weight: 600 });
+    if (r.b >= 0.18) txt(p, x + labelW + a + 9, by + barH / 2 + 4, fmtPct(r.b), { size: 11.5, fill: "#ffffff", weight: 600 });
+    txt(p, x + w, by + barH + 13, r.n + " conv.", { size: 10.5, anchor: "end", fill: C.ink3 });
+  });
+}
+
+function table(p, x, y, cols, rows) {
+  let cx = x;
+  cols.forEach(c => { txt(p, c.align === "end" ? cx + c.w - 8 : cx, y, c.h.toUpperCase(), { size: 10, fill: C.ink3, weight: 600, anchor: c.align || "start" }); cx += c.w; });
+  el("line", { x1: x, x2: cx, y1: y + 9, y2: y + 9, stroke: C.border }, p);
+  rows.forEach((r, i) => {
+    let cx2 = x; const ry = y + 30 + i * 28;
+    r.forEach((v, j) => {
+      const c = cols[j];
+      if (c.heat) {
+        const t = Number(String(v).replace(",", ".").replace("%", "")) / 100;
+        el("rect", { x: cx2 - 6, y: ry - 16, width: c.w - 8, height: 22, rx: 3, fill: `rgba(27,175,122,${0.12 + 0.55 * t})` }, p);
+      }
+      txt(p, c.align === "end" ? cx2 + c.w - 8 : cx2, ry, String(v), { size: 12, fill: C.ink, anchor: c.align || "start" });
+      cx2 += c.w;
+    });
+    el("line", { x1: x, x2: cx2, y1: ry + 10, y2: ry + 10, stroke: C.grid }, p);
+  });
+}
+
+function note(p, x, y, w, items) {
+  items.forEach((it, i) => {
+    const ny = y + i * 62;
+    el("rect", { x, y: ny - 12, width: 3, height: 44, rx: 1.5, fill: it.color }, p);
+    txt(p, x + 14, ny + 2, it.title, { size: 12.5, fill: C.ink, weight: 600 });
+    it.lines.forEach((l, k) => txt(p, x + 14, ny + 20 + k * 15, l, { size: 11.5, fill: C.ink2 }));
+  });
+}
+
+// ---------- Datos reales (BigQuery, 30 conversaciones) ----------
+const summary = { conv: 30, containment: 0.8, handoff: 0.2, conversion: 0.333, ticket: 190988, cost: 0.00111, p50: 9.91, p90: 18.05 };
+const daily = [["22-oct",1,0],["23-oct",2,0],["24-oct",1,0],["25-oct",2,1],["26-oct",0,0],["27-oct",0,1],["28-oct",0,0],["29-oct",0,0],["30-oct",1,0],["31-oct",1,0],["01-nov",1,0],["02-nov",0,0],["03-nov",1,0],["04-nov",0,0],["05-nov",3,0],["06-nov",1,0],["07-nov",1,0],["08-nov",0,1],["09-nov",0,0],["10-nov",1,0],["11-nov",3,0],["12-nov",0,0],["13-nov",1,0],["14-nov",1,0],["15-nov",0,0],["16-nov",2,1],["17-nov",0,1],["18-nov",0,0],["19-nov",1,0],["20-nov",0,1]]
+  .map(([label, res, ho]) => ({ label, res, ho }));
+const outcomes = [
+  { label: "Resuelta por el bot", value: 16, text: "16 · 53,3%", color: C.aqua },
+  { label: "Derivada a ejecutivo", value: 6, text: "6 · 20,0%", color: C.orange },
+  { label: "Venta (link de pago)", value: 4, text: "4 · 13,3%", color: C.blue },
+  { label: "Bloqueada por guardrail", value: 4, text: "4 · 13,3%", color: C.violet },
+];
+const byIntent = [
+  { label: "Ventas", a: 1.0, b: 0.0, n: 12 },
+  { label: "Postventa", a: 0.875, b: 0.125, n: 8 },
+  { label: "FAQ", a: 0.375, b: 0.625, n: 8 },
+];
+
+// ---------- Página 1 ----------
+(function () {
+  const s = document.getElementById("m1");
+  header(s, "Resumen ejecutivo", 1);
+  const cards = [
+    ["Conversaciones", "30", "Período completo", null],
+    ["Contención", fmtPct(summary.containment), "Meta 70% · cumplida", "good"],
+    ["Conversión de ventas", fmtPct(summary.conversion), "Meta 25% · cumplida", "good"],
+    ["Ticket promedio", fmtClp(summary.ticket), "4 ventas", null],
+    ["Costo por conversación", "US$0,0011", "Precio de lista Gemini", null],
+    ["Latencia p90", "18,1 s", "Meta 15 s · no cumplida", "bad"],
+  ];
+  cards.forEach((c, i) => scorecard(s, 24 + i * 207.3, 88, 195.3, ...c));
+
+  card(s, 24, 228, 760, 330, "Conversaciones por día", "Resueltas por el bot vs. derivadas");
+  legend(s, 40, 278, [["Resueltas por el bot", C.aqua], ["Derivadas a ejecutivo", C.orange]]);
+  stackedColumns(s, 66, 300, 700, 220, daily, [["res", C.aqua, "Resueltas"], ["ho", C.orange, "Derivadas"]], 3);
+
+  card(s, 800, 228, 456, 330, "Cómo terminan las conversaciones", "30 conversaciones");
+  hbars(s, 816, 286, 424, outcomes, { labelW: 158, barH: 26, gap: 30, max: 16 });
+
+  card(s, 24, 574, 760, 290, "Contención por intención", "Contenida vs. derivada");
+  legend(s, 40, 622, [["Contenida por el bot", C.aqua], ["Derivada a ejecutivo", C.orange]]);
+  hundredBars(s, 40, 648, 724, byIntent);
+
+  card(s, 800, 574, 456, 290, "Lectura del período");
+  note(s, 816, 626, 420, [
+    { title: "Contención sobre la meta", color: C.good, lines: ["80% de las conversaciones terminan sin", "un ejecutivo (meta: 70%)."] },
+    { title: "La venta se pierde antes del carrito", color: C.blue, lines: ["92% recibe recomendaciones; 33% agrega", "al carrito. Ver página 2."] },
+    { title: "Latencia p90 sobre la meta", color: C.bad, lines: ["18,1 s vs. 15 s. El router toma ~6 s;", "es el primer candidato a optimizar."] },
+  ]);
+})();
+
+// ---------- Página 2 ----------
+(function () {
+  const s = document.getElementById("m2");
+  header(s, "Ventas y conversión", 2);
+  [["Conversaciones de venta", "12", "Etapa 1 del embudo", null],
+   ["Conversión de ventas", "33,3%", "Meta 25% · cumplida", "good"],
+   ["Ventas logradas", "4", "Recibieron link de pago", null],
+   ["Ticket promedio", fmtClp(190988), "Rango $23.980 – $469.990", null]]
+    .forEach((c, i) => scorecard(s, 24 + i * 311, 88, 299, ...c));
+
+  card(s, 24, 228, 760, 400, "Embudo de ventas", "Conversaciones de compra · % sobre la etapa 1");
+  const funnel = [["1. Consulta de compra", 12, 1.0], ["2. Recibió recomendaciones", 11, 0.917], ["3. Agregó al carrito", 4, 0.333], ["4. Recibió link de pago", 4, 0.333]];
+  hbars(s, 40, 282, 724, funnel.map(([label, v, sh], i) => ({ label, value: v, text: `${v} · ${fmtPct(sh)}`, color: C.funnel[i] })), { labelW: 190, barH: 40, gap: 34, max: 12 });
+  // anotación de la caída mayor
+  el("rect", { x: 420, y: 560, width: 344, height: 52, rx: 6, fill: "#fdf1ea", stroke: "#f3c8b3" }, s);
+  txt(s, 434, 581, "Caída mayor: −58,4 pts", { size: 12.5, fill: "#9a3a12", weight: 600 });
+  txt(s, 434, 599, "entre recomendaciones y carrito", { size: 11.5, fill: "#9a3a12" });
+
+  card(s, 800, 228, 456, 400, "Conversión por perfil de cliente", "Solo conversaciones de venta");
+  table(s, 816, 286, [{ h: "Perfil", w: 170 }, { h: "Conv.", w: 70, align: "end" }, { h: "Ventas", w: 70, align: "end" }, { h: "Conversión", w: 104, align: "end" }],
+    [["Compra directa", 4, 4, "100,0%"], ["Comparador", 7, 0, "0,0%"], ["Fuera de tema", 1, 0, "0,0%"]]);
+  txt(s, 816, 420, "Los comparadores reciben recomendaciones pero no", { size: 11.5, fill: C.ink2 });
+  txt(s, 816, 436, "piden agregar al carrito: es el segmento a trabajar.", { size: 11.5, fill: C.ink2 });
+
+  card(s, 24, 644, 1232, 220, "Ventas logradas", "Ordenadas por fecha");
+  table(s, 40, 698, [{ h: "Conversación", w: 220 }, { h: "Fecha", w: 260 }, { h: "Perfil", w: 260 }, { h: "Total del carrito", w: 230, align: "end" }, { h: "Costo LLM", w: 200, align: "end" }],
+    [["SIM-012", "03-nov-2026 04:12", "Compra directa", "$23.980", "US$0,0023"], ["SIM-019", "11-nov-2026 05:02", "Compra directa", "$179.990", "US$0,0021"],
+     ["SIM-025", "30-oct-2026 02:23", "Compra directa", "$469.990", "US$0,0023"], ["SIM-017", "25-oct-2026 08:28", "Compra directa", "$89.990", "US$0,0021"]]);
+})();
+
+// ---------- Página 3 ----------
+(function () {
+  const s = document.getElementById("m3");
+  header(s, "Atención y derivación", 3);
+  [["Contención", "80,0%", "Meta 70% · cumplida", "good"],
+   ["Derivación a ejecutivo", "20,0%", "6 conversaciones", null],
+   ["Bloqueos de guardrail", "4", "Tarjeta, injection, fuera de tema", null],
+   ["Respuestas de error", "0", "Fallback del agente", "good"]]
+    .forEach((c, i) => scorecard(s, 24 + i * 311, 88, 299, ...c));
+
+  card(s, 24, 228, 760, 300, "Contención por intención", "Contenida vs. derivada");
+  legend(s, 40, 276, [["Contenida por el bot", C.aqua], ["Derivada a ejecutivo", C.orange]]);
+  hundredBars(s, 40, 302, 724, byIntent);
+  txt(s, 40, 486, "FAQ incluye los mensajes \"quiero hablar con una persona\": su derivación es correcta, no un fallo.", { size: 11.5, fill: C.ink2 });
+
+  card(s, 800, 228, 456, 300, "Motivos de derivación", "6 derivaciones");
+  hbars(s, 816, 286, 424, [
+    { label: "Regla del router", value: 6, text: "6 · 100%", color: C.orange },
+    { label: "Política del subagente", value: 0, text: "0", color: C.orange },
+    { label: "Falla del proveedor", value: 0, text: "0", color: C.orange },
+  ], { labelW: 150, barH: 26, gap: 30, max: 6 });
+  txt(s, 816, 486, "Pidió una persona (5) y molestia alta (1).", { size: 11.5, fill: C.ink2 });
+
+  card(s, 24, 544, 1232, 320, "Detalle por intención", "Mapa de calor en contención");
+  table(s, 40, 598, [{ h: "Intención", w: 300 }, { h: "Conversaciones", w: 220, align: "end" }, { h: "Contención", w: 220, align: "end", heat: true }, { h: "Derivación", w: 220, align: "end" }, { h: "Latencia prom.", w: 220, align: "end" }],
+    [["Ventas", 12, "100,0%", "0,0%", "12,4 s"], ["Postventa", 8, "87,5%", "12,5%", "8,9 s"], ["FAQ", 8, "37,5%", "62,5%", "6,3 s"], ["Bloqueada por guardrail", 2, "100,0%", "0,0%", "0,0 s"]]);
+})();
+
+// ---------- Página 4 ----------
+(function () {
+  const s = document.getElementById("m4");
+  header(s, "Eficiencia y costo", 4);
+  [["Costo por conversación", "US$0,0011", "Precio de lista Gemini", null],
+   ["Costo por 1.000 conversaciones", "US$1,11", "Proyección lineal", null],
+   ["Latencia p50", "9,9 s", "Respuesta típica", null],
+   ["Latencia p90", "18,1 s", "Meta 15 s · no cumplida", "bad"]]
+    .forEach((c, i) => scorecard(s, 24 + i * 311, 88, 299, ...c));
+
+  // Latencia agrupada con línea de meta
+  card(s, 24, 228, 608, 340, "Latencia por intención", "Segundos por turno");
+  legend(s, 40, 276, [["p50", C.blue], ["p90", C.orange]]);
+  const lx = 72, ly = 300, lw = 540, lh = 220, lmax = 25;
+  [0, 5, 10, 15, 20, 25].forEach(t => {
+    const ty = ly + lh - (t / lmax) * lh;
+    el("line", { x1: lx, x2: lx + lw, y1: ty, y2: ty, stroke: C.grid }, s);
+    txt(s, lx - 8, ty + 4, t + " s", { size: 10.5, anchor: "end", fill: C.ink3 });
+  });
+  const lat = [["Ventas", 12.63, 20.09], ["Postventa", 9.83, 11.33], ["FAQ", 3.32, 15.48]];
+  lat.forEach(([label, p50, p90], i) => {
+    const gx = lx + 40 + i * 170;
+    [[p50, C.blue, "p50"], [p90, C.orange, "p90"]].forEach(([v, color, name], j) => {
+      const bh = (v / lmax) * lh;
+      const r = el("rect", { x: gx + j * 52, y: ly + lh - bh, width: 46, height: bh, rx: 4, fill: color }, s);
+      tip(r, `${label} ${name}: ${v.toFixed(1).replace(".", ",")} s`);
+      txt(s, gx + j * 52 + 23, ly + lh - bh - 6, v.toFixed(1).replace(".", ","), { size: 11, anchor: "middle", fill: C.ink, weight: 600 });
+    });
+    txt(s, gx + 49, ly + lh + 18, label, { size: 11.5, anchor: "middle", fill: C.ink2 });
+  });
+  const my = ly + lh - (15 / lmax) * lh;
+  el("line", { x1: lx, x2: lx + lw, y1: my, y2: my, stroke: C.bad, "stroke-width": 1.5, "stroke-dasharray": "5 4" }, s);
+  txt(s, lx + lw, my - 6, "Meta p90: 15 s", { size: 11, anchor: "end", fill: C.bad, weight: 600 });
+
+  card(s, 648, 228, 608, 340, "Tokens por turno", "Promedio · entrada vs. salida");
+  legend(s, 664, 276, [["Entrada", C.blue], ["Salida", C.orange]]);
+  const tok = [["Ventas", 2597, 193], ["Postventa", 2160, 144], ["FAQ", 628, 101]];
+  tok.forEach(([label, tin, tout], i) => {
+    const by = 312 + i * 72, bx = 664 + 100, w = 400, max = 2800;
+    txt(s, 664, by + 17, label, { size: 12, fill: C.ink2 });
+    const a = (tin / max) * w, b = (tout / max) * w;
+    const r1 = el("rect", { x: bx, y: by, width: a - 1, height: 26, rx: 3, fill: C.blue }, s); tip(r1, `${label}: ${tin} tokens de entrada`);
+    const r2 = el("rect", { x: bx + a + 1, y: by, width: Math.max(2, b - 1), height: 26, rx: 3, fill: C.orange }, s); tip(r2, `${label}: ${tout} tokens de salida`);
+    txt(s, bx + a + b + 10, by + 17, `${tin.toLocaleString("es-CL")} + ${tout}`, { size: 12, fill: C.ink, weight: 600 });
+  });
+  txt(s, 664, 540, "La búsqueda de productos devuelve 6 productos con especificaciones.", { size: 11.5, fill: C.ink2 });
+
+  card(s, 24, 584, 1232, 280, "Detalle de eficiencia por intención", "Nivel turno");
+  table(s, 40, 638, [{ h: "Intención", w: 240 }, { h: "Turnos", w: 140, align: "end" }, { h: "Llamadas LLM", w: 170, align: "end" }, { h: "p50", w: 150, align: "end" }, { h: "p90", w: 150, align: "end" }, { h: "Costo por turno", w: 330, align: "end" }],
+    [["Ventas", 23, "2,61", "12,6 s", "20,1 s", "US$0,000943"], ["Postventa", 12, "2,58", "9,8 s", "11,3 s", "US$0,000756"], ["FAQ", 8, "1,50", "3,3 s", "15,5 s", "US$0,000308"], ["Guardrail (sin LLM)", 2, "0,00", "0,0 s", "0,0 s", "US$0,000000"]]);
+})();
+</script>
