@@ -3,35 +3,41 @@
 | | |
 |---|---|
 | **Producto** | Asistente de IA de HogarTec en WhatsApp |
-| **Responsable** | [COMPLETAR: tu nombre y rol] |
+| **Responsable** | Julio Pradenas · Product Lead de IA conversacional |
 | **Estado** | MVP en producción (piloto con número de prueba) |
-| **Última actualización** | [COMPLETAR: fecha] |
+| **Última actualización** | 19 de noviembre de 2026 |
 | **Áreas involucradas** | Producto, Tecnología, Atención a Clientes, Legal, Ciberseguridad, Datos |
 
-> **Cómo completar este documento.** Lo marcado `[COMPLETAR]` son decisiones de producto: escríbelas
-> con tu criterio y justifícalas en una línea. Lo demás ya está construido o medido en este repositorio;
-> revísalo y ajústalo si no estás de acuerdo. Un PRD bueno es corto: cada sección responde una pregunta.
+> HogarTec es una tienda ficticia. Las cifras de "línea base" vienen de 30 conversaciones simuladas contra
+> el agente real. Todo dato del negocio que no se midió en este proyecto está marcado como **supuesto**.
 
 ## 1. Resumen
 
-> Guía: 3–4 líneas. Qué es, para quién, qué problema resuelve y cómo sabremos que funciona.
-
-[COMPLETAR]
+Un asistente de IA en WhatsApp que atiende a los clientes de HogarTec las 24 horas: recomienda productos y
+entrega el link de pago, informa el estado de los pedidos, gestiona devoluciones según la política y deriva
+a un ejecutivo los casos que requieren a una persona. El objetivo es resolver sin intervención humana la
+mayoría de las consultas repetitivas y convertir en ventas las consultas de compra que hoy se pierden por
+falta de respuesta. El éxito se mide con la tasa de contención, protegida por métricas de calidad, latencia
+y costo.
 
 ## 2. Problema y oportunidad
 
-> Guía: describe el problema desde el cliente y desde el negocio. Usa supuestos explícitos si no tienes datos
-> (ej: "supuesto: 40% de los contactos son de estado de pedido"). Un reclutador valora ver que separas datos de supuestos.
+**Del lado del cliente:** quien escribe por WhatsApp espera respuesta en minutos, pero la atención humana
+funciona en horario hábil. Saber dónde está un pedido o si se puede devolver un producto obliga a esperar
+o a llamar, y una consulta de compra sin respuesta rápida termina en otra tienda.
 
-**Del lado del cliente:** [COMPLETAR: ej. tiempos de espera en atención, horarios limitados, tener que llamar para saber de un pedido]
-
-**Del lado del negocio:** [COMPLETAR: ej. costo por contacto humano, ventas perdidas por no responder a tiempo]
+**Del lado del negocio:** la mayoría de los contactos son preguntas repetitivas (estado de pedido, costo de
+despacho, plazos de devolución) que consumen tiempo de ejecutivos, y las consultas de compra fuera de horario
+no se atienden.
 
 **Supuestos a validar:**
 
 | Supuesto | Cómo se valida | Estado |
 |---|---|---|
-| [COMPLETAR] | [COMPLETAR] | Por validar |
+| Al menos 50% de los contactos por WhatsApp son de estado de pedido, despacho o devoluciones | Clasificar con el router una muestra de 500 conversaciones históricas anonimizadas | Por validar |
+| Un contacto atendido por un ejecutivo cuesta al menos 50 veces más que uno atendido por el bot | Costo hora del equipo ÷ contactos por hora, comparado con US$0,0011 por conversación | Por validar |
+| 30% de las consultas de compra llegan fuera de horario hábil | Distribución horaria de mensajes de los últimos 3 meses | Por validar |
+| Los clientes aceptan comprar por un link enviado por el bot | Conversión del piloto ≥ 20% en conversaciones de venta | Por validar en el piloto |
 
 ## 3. Usuarios
 
@@ -41,29 +47,36 @@
 | Cliente con un pedido | Saber dónde está su pedido o devolverlo | Estado, fecha estimada calculada en días hábiles, devoluciones según política |
 | Cliente con una duda | Despacho, garantía, medios de pago | Respuestas desde las políticas oficiales (RAG) |
 | Ejecutivo de atención | Recibir solo los casos que requieren a una persona, con contexto | Ticket con motivo, resumen y transcripción; el bot se pausa |
-| [COMPLETAR: ¿falta alguno? ej. responsable comercial que mira conversión] | | |
+| Responsable comercial | Saber cuánto vende el canal y dónde se pierden las ventas | Dashboard de conversión, ticket promedio y embudo de ventas |
 
 ## 4. Objetivos y no objetivos
 
-**Objetivos del MVP:** [COMPLETAR: 2–3 objetivos medibles, ej. "absorber el X% de las consultas de pedidos sin ejecutivo"]
+**Objetivos del MVP:**
+1. Resolver sin ejecutivo al menos el 70% de las conversaciones, sin bajar la fidelidad de las respuestas de 4,5 sobre 5.
+2. Convertir al menos el 25% de las conversaciones de venta en un link de pago.
+3. Mantener el costo por conversación bajo US$0,01 a precio de lista.
 
 **No objetivos (fuera de alcance a propósito):**
-- [COMPLETAR: ej. pagos dentro del chat, mensajes proactivos de marketing, audios]
+- Cobrar dentro del chat: el pago siempre ocurre en el sitio, por link.
+- Mensajes salientes de marketing o carrito abandonado: requieren consentimiento y plantillas aprobadas.
+- Audios, imágenes y videos del cliente.
+- Cancelar pedidos o cambiar direcciones automáticamente: se derivan a un ejecutivo.
+- Canales distintos de WhatsApp (web, Instagram) en esta fase.
 
 ## 5. Métricas de éxito
 
-> Guía: separa la métrica principal (north star), las de apoyo y las de protección (las que no pueden
-> empeorar). La línea base viene de la simulación; la meta es tu decisión.
+La métrica principal es la **contención**: mide directamente cuánta atención absorbe el bot. Las de
+protección evitan que se suba la contención a costa de respuestas peores, lentas o caras.
 
 | Tipo | Métrica | Definición | Línea base (simulación) | Meta |
 |---|---|---|---|---|
-| Principal | [COMPLETAR: elige una, ej. contención] | Conversaciones sin ejecutivo y sin error ÷ total | 80% | [COMPLETAR] |
-| Apoyo | Conversión de ventas | Conversaciones de venta con link de pago ÷ conversaciones de venta | 33% | [COMPLETAR] |
-| Apoyo | Ticket promedio | Total del carrito en ventas del bot | $190.988 | [COMPLETAR] |
-| Protección | Latencia p90 | Percentil 90 del tiempo de respuesta | 18,1 s | [COMPLETAR] |
-| Protección | Fidelidad (juez) | Datos de la respuesta respaldados por herramientas (1–5) | 5,00 | [COMPLETAR] |
-| Protección | Costo por conversación | Suma del costo de LLM a precio de lista | US$0,0011 | [COMPLETAR] |
-| [COMPLETAR: ¿satisfacción del cliente (CSAT)? ¿cómo se mediría?] | | | — | |
+| Principal | Contención | Conversaciones sin ejecutivo y sin error ÷ total | 80% | ≥ 70% |
+| Apoyo | Conversión de ventas | Conversaciones de venta con link de pago ÷ conversaciones de venta | 33% | ≥ 25% |
+| Apoyo | Ticket promedio | Total del carrito en ventas del bot | $190.988 | Referencial: comparar con el ticket del sitio web |
+| Protección | Latencia p90 | Percentil 90 del tiempo de respuesta | 18,1 s | ≤ 15 s |
+| Protección | Fidelidad (juez) | Datos de la respuesta respaldados por herramientas (1–5) | 5,00 | ≥ 4,5 |
+| Protección | Costo por conversación | Suma del costo de LLM a precio de lista | US$0,0011 | ≤ US$0,01 |
+| Protección | Satisfacción (CSAT) | % de respuestas 4 o 5 a "¿Resolvimos tu consulta?" (1–5) al cerrar | Sin medición | ≥ 80% · se agrega en el piloto con clientes |
 
 ## 6. Alcance del MVP
 
@@ -77,32 +90,34 @@
 | Derivación a ejecutivo | Construido | Reglas, política y fallas del sistema; ticket con resumen |
 | Guardrails | Construido | Datos personales, tarjetas, injection, fuera de tema, precios respaldados |
 | Cancelación de pedidos | Parcial | Se explica la política y se deriva; no hay cancelación automática |
-| Botones y listas de WhatsApp | No incluido | [COMPLETAR: ¿entra al MVP o a la fase 2?] |
+| Botones y listas de WhatsApp | Fase 2 | Mejoran la conversión al confirmar la compra con un toque; no bloquean el piloto |
 | Mensajes salientes (carrito abandonado) | No incluido | Requiere plantillas aprobadas por Meta y consentimiento |
 
 ## 7. Requisitos funcionales
 
-> Guía: prioriza con MoSCoW (Must / Should / Could / Won't). La prioridad es tu decisión.
-
 | ID | Requisito | Prioridad |
 |---|---|---|
-| RF-01 | El agente recomienda hasta 3 productos con stock, respetando el presupuesto indicado | [COMPLETAR] |
-| RF-02 | Agrega al carrito solo con confirmación explícita del cliente y entrega el link de pago | [COMPLETAR] |
-| RF-03 | Informa estado y fecha estimada de pedidos del cliente que escribe | [COMPLETAR] |
-| RF-04 | Crea devoluciones solo dentro de la política (10 días, producto entregado, sin excepción sanitaria) | [COMPLETAR] |
-| RF-05 | Responde políticas citando solo la información oficial | [COMPLETAR] |
-| RF-06 | Deriva a un ejecutivo según las reglas de la sección 10 y pausa el bot | [COMPLETAR] |
-| RF-07 | [COMPLETAR] | |
+| RF-01 | El agente recomienda hasta 3 productos con stock, respetando el presupuesto indicado | Must |
+| RF-02 | Agrega al carrito solo con confirmación explícita del cliente y entrega el link de pago | Must |
+| RF-03 | Informa estado y fecha estimada de pedidos del cliente que escribe | Must |
+| RF-04 | Crea devoluciones solo dentro de la política (10 días, producto entregado, sin excepción sanitaria) | Must |
+| RF-05 | Responde políticas citando solo la información oficial | Must |
+| RF-06 | Deriva a un ejecutivo según las reglas de la sección 10 y pausa el bot | Must |
+| RF-07 | Envía un mensaje de bienvenida que explica qué puede hacer el asistente | Should |
+| RF-08 | Informa el horario de atención cuando la derivación ocurre fuera de horario | Should |
+| RF-09 | Confirma la compra y la elección de producto con botones y listas de WhatsApp | Could |
+| RF-10 | Pide una calificación (CSAT) al cerrar la conversación | Should |
+| RF-11 | Cancela pedidos no despachados sin intervención humana | Won't (esta fase) |
 
 ## 8. Requisitos no funcionales
 
 | Área | Requisito | Estado actual |
 |---|---|---|
-| Latencia | p90 de respuesta ≤ [COMPLETAR] s | 18,1 s |
+| Latencia | p90 de respuesta ≤ 15 s | 18,1 s · no cumple; es la primera optimización |
 | Disponibilidad | Si el proveedor de LLM falla, se usa un modelo de respaldo y, si todos fallan, se deriva | Implementado |
 | Privacidad | Datos personales enmascarados antes del LLM, la base de datos y los tickets; teléfono anonimizado en trazas | Implementado |
 | Seguridad | Webhook con firma HMAC; credenciales en variables de entorno; nunca se piden datos de pago | Implementado |
-| Costo | Costo por conversación ≤ [COMPLETAR] | US$0,0011 |
+| Costo | Costo por conversación ≤ US$0,01 | US$0,0011 |
 | Calidad | Evaluación automática en cada cambio con umbrales que bloquean la integración | Implementado |
 
 ## 9. Experiencia conversacional
@@ -120,13 +135,17 @@ Ver [Diseño conversacional](conversation_design.md): tono, flujos, mensajes del
 | Política: garantía, pedido no recibido, atraso > 2 días hábiles, cambio de dirección en preparación | "mi lavadora no enciende" | Sí |
 | Falla del proveedor de LLM | — | Sí |
 
-**Acuerdo de servicio con Atención a Clientes:** [COMPLETAR: tiempo máximo de primera respuesta del ejecutivo, horario de atención, qué ve el cliente fuera de horario]
+**Acuerdo de servicio con Atención a Clientes (propuesta para acordar):**
+- Primera respuesta de un ejecutivo en **máximo 30 minutos** dentro del horario hábil (lunes a viernes, 9:00 a 18:00).
+- Casos derivados fuera de horario: se atienden **antes de las 11:00 del siguiente día hábil**.
+- Fuera de horario, el cliente recibe el número de caso y la hora estimada de respuesta.
+- Amenazas legales y reclamos formales tienen prioridad en la bandeja.
 
 ## 11. Dependencias e integraciones
 
 | Sistema | Uso | Riesgo |
 |---|---|---|
-| VTEX (hoy simulado) | Catálogo, stock, carrito, pedidos | [COMPLETAR: ¿quién es el dueño de la integración real?] |
+| VTEX (hoy simulado) | Catálogo, stock, carrito, pedidos | El equipo de Plataforma es dueño de la integración real; se necesita un ambiente de pruebas de VTEX y credenciales de solo lectura para el piloto |
 | WhatsApp Cloud API (Meta) | Canal | Verificación del negocio, calidad del número, costos por conversación |
 | Gemini (AI Studio, compatible con Vertex AI) | LLM y embeddings | Cuotas, saturación (mitigado con modelo de respaldo) |
 | Supabase (Postgres + pgvector) | Memoria, políticas, tickets | Plan gratuito con límites de conexión |
@@ -137,34 +156,42 @@ Ver [Diseño conversacional](conversation_design.md): tono, flujos, mensajes del
 
 | Riesgo | Impacto | Mitigación actual | Responsable |
 |---|---|---|---|
-| El agente informa un precio incorrecto | Reclamo, obligación de respetar el precio | Guardrail de salida: todo monto debe venir de una herramienta | [COMPLETAR] |
-| Se filtran datos de otro cliente | Legal y reputacional | El teléfono no es parámetro del LLM; la API valida el dueño | [COMPLETAR] |
-| Prompt injection | Respuestas fuera de política | Detección en el router y reglas de negocio en la API | [COMPLETAR] |
-| Caída del proveedor de LLM | Sin atención | Modelo de respaldo y derivación automática | [COMPLETAR] |
-| [COMPLETAR] | | | |
+| El agente informa un precio incorrecto | Reclamo, obligación de respetar el precio | Guardrail de salida: todo monto debe venir de una herramienta | Producto + Tecnología |
+| Se filtran datos de otro cliente | Legal y reputacional | El teléfono no es parámetro del LLM; la API valida el dueño | Ciberseguridad |
+| Prompt injection | Respuestas fuera de política | Detección en el router y reglas de negocio en la API | Ciberseguridad + Tecnología |
+| Caída del proveedor de LLM | Sin atención | Modelo de respaldo y derivación automática | Tecnología |
+| Latencia alta en horas punta | Abandono de la conversación | Medición p90 en Langfuse; optimización del router en el backlog | Tecnología |
+| Saturación del equipo humano por derivaciones | Incumplimiento del acuerdo de servicio | Tasa de derivación monitoreada en el dashboard; límite de alerta en 30% | Atención a Clientes |
 
 ## 13. Cumplimiento y legal
 
-> Guía: valida cada punto con Legal y Compliance. Estas son preguntas, no respuestas legales.
+> Estos puntos se validan con Legal y Compliance antes del piloto con clientes; no son asesoría legal.
 
 - **Ley del Consumidor (Ley 19.496):** derecho a retracto de 10 días y garantía legal de 6 meses. Las políticas
-  del bot los reflejan. [COMPLETAR: ¿Legal aprobó los textos?]
-- **Protección de datos personales:** [COMPLETAR: revisar con Legal la ley vigente de protección de datos
-  y qué exige sobre consentimiento, finalidad y retención de las conversaciones]
-- **Políticas de WhatsApp Business:** consentimiento (opt-in) para mensajes salientes y opción de darse de baja.
-  [COMPLETAR]
-- **Retención de datos:** [COMPLETAR: cuánto tiempo se guardan conversaciones, checkpoints y tickets]
+  del bot los reflejan. Pendiente: que Legal apruebe los textos de `data/policies/` antes del piloto con clientes.
+- **Protección de datos personales:** revisar con Legal la Ley 21.719, que moderniza el régimen de la Ley 19.628
+  y entra en vigencia en diciembre de 2026: base de licitud del tratamiento, finalidad declarada y derechos del
+  titular sobre sus conversaciones.
+- **Políticas de WhatsApp Business:** el MVP solo responde mensajes iniciados por el cliente. Los mensajes
+  salientes requerirán consentimiento (opt-in) registrado y una forma simple de darse de baja.
+- **Retención de datos:** propuesta para validar con Legal: conversaciones y memoria del agente por 90 días;
+  tickets de derivación por 12 meses; trazas de observabilidad por 30 días. Los datos de tarjetas nunca se
+  almacenan porque se enmascaran antes de guardarse.
 
 ## 14. Plan de lanzamiento
 
 | Fase | Alcance | Criterio para avanzar |
 |---|---|---|
-| Piloto interno | [COMPLETAR] | [COMPLETAR] |
-| Piloto con clientes | [COMPLETAR: ej. % del tráfico o un segmento] | [COMPLETAR] |
-| Lanzamiento general | [COMPLETAR] | [COMPLETAR] |
+| Piloto interno | 2 semanas con 10 colaboradores de Atención a Clientes y Ventas usando el número de prueba | Evaluación en CI en verde, 0 incidentes de privacidad y aprobación de los textos por Legal |
+| Piloto con clientes | 10% de los contactos entrantes por WhatsApp durante 4 semanas | Contención ≥ 70%, CSAT ≥ 80%, latencia p90 ≤ 15 s y acuerdo de servicio cumplido |
+| Lanzamiento general | 100% de los contactos por WhatsApp | Métricas del piloto estables 2 semanas seguidas y equipo humano dimensionado para la tasa de derivación |
 
 ## 15. Preguntas abiertas
 
 | Pregunta | Quién responde | Fecha |
 |---|---|---|
-| [COMPLETAR] | | |
+| ¿Legal aprueba las políticas de retracto y garantía tal como las comunica el bot? | Legal | 4 de diciembre de 2026 |
+| ¿Qué herramienta de atención recibirá los tickets (Zendesk, Freshdesk u otra)? | Atención a Clientes | 4 de diciembre de 2026 |
+| ¿Hay un ambiente de pruebas de VTEX disponible para el piloto? | Plataforma | 11 de diciembre de 2026 |
+| ¿Cuál es la base legal para guardar las conversaciones con fines de mejora del modelo? | Legal + Datos | 11 de diciembre de 2026 |
+| ¿El presupuesto permite migrar a Vertex AI con cuota pagada para el lanzamiento general? | Producto + Finanzas | 18 de diciembre de 2026 |
