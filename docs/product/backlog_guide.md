@@ -1,39 +1,62 @@
 # Backlog en Jira
 
-Archivo: [`backlog_jira.csv`](backlog_jira.csv). 8 épicas y 29 historias:
+Archivo: [`backlog_jira.csv`](backlog_jira.csv). 8 épicas y 32 historias, todas con criterios de aceptación,
+prioridad y puntos de historia.
 
 | | Hecho | Por hacer |
 |---|---|---|
-| Épicas | 4 | 4 |
-| Historias | 16 (lo construido en este repositorio) | 13 (próximos pasos) |
+| Épicas | 3 | 5 |
+| Historias | 16 (74 puntos: lo construido en este repositorio) | 16 (77 puntos) |
 
-Cada historia tiene criterios de aceptación en la descripción. Las 13 pendientes empiezan con `[COMPLETAR]`:
-el criterio propuesto es un punto de partida, no una decisión.
+## Cómo se priorizó
 
-## 1. Completa antes de importar
+Las historias pendientes se priorizaron con **RICE** = Reach × Impact × Confidence ÷ Effort. El cálculo
+completo está en la descripción de cada historia.
 
-Abre el CSV en Google Sheets o Excel y completa dos columnas. Son decisiones tuyas:
+| Factor | Escala usada |
+|---|---|
+| Reach | Conversaciones al mes afectadas. **Supuesto:** 10.000 conversaciones mensuales; las derivaciones son ~20% (2.000) y las de venta ~40% (4.000) |
+| Impact | 3 masivo · 2 alto · 1 medio · 0,5 bajo |
+| Confidence | 100% medido · 80% con evidencia del proyecto · 50% hipótesis |
+| Effort | Semanas-persona |
 
-**Priority** (`Highest`, `High`, `Medium`, `Low`). Sugerencia: prioriza las 13 pendientes con RICE y
-anota el puntaje en la descripción, para poder defender el orden en una entrevista:
+| RICE | Prioridad en Jira |
+|---|---|
+| ≥ 10.000 | Highest |
+| 5.000 – 9.999 | High |
+| 1.000 – 4.999 | Medium |
+| < 1.000 | Low |
 
-| Factor | Pregunta | Escala |
+**Ranking de las pendientes:**
+
+| RICE | Prioridad | Historia |
 |---|---|---|
-| Reach (alcance) | ¿Cuántas conversaciones al mes afecta? | Número estimado |
-| Impact (impacto) | ¿Cuánto mueve la métrica principal? | 3 masivo · 2 alto · 1 medio · 0,5 bajo |
-| Confidence (confianza) | ¿Qué tan seguro estás de alcance e impacto? | 100% · 80% · 50% |
-| Effort (esfuerzo) | ¿Cuántas semanas-persona? | Número |
+| 20.000 | Highest | Dashboard de KPIs en Looker Studio |
+| 16.000 | Highest | Reducir la latencia del router |
+| 8.000 | High | Migrar a Vertex AI con cuota pagada |
+| 8.000 | High | Eventos de producción hacia BigQuery |
+| 8.000 | High | Casos de evaluación escritos por Atención a Clientes |
+| 8.000 | High | Calibrar el juez contra etiquetas humanas |
+| 6.000 | High | Conectar VTEX real |
+| 5.600 | High | Encuesta de satisfacción al cerrar la conversación |
+| 2.400 | Medium | Mensaje de bienvenida |
+| 2.000 | Medium | Botones y listas de WhatsApp |
+| 1.600 | Medium | Aviso de cierre de caso |
+| 1.067 | Medium | Integrar la bandeja de tickets con la herramienta del equipo |
+| 1.000 | Medium | Acuerdo de servicio de primera respuesta humana |
+| 960 | Low | Mensaje fuera de horario |
+| 375 | Low | Responder varias preguntas en un mensaje |
+| 333 | Low | Plantillas para mensajes salientes |
 
-RICE = Reach × Impact × Confidence ÷ Effort.
+**Lectura del ranking:** primero lo que permite medir y cumplir la meta de latencia (dashboard, router);
+después lo que prepara el piloto con clientes reales (Vertex AI, eventos de producción, calidad de la
+evaluación, VTEX real). "Botones y listas" queda en Medium por su baja confianza (50%): el embudo indica
+que ayudaría, pero el efecto no está medido. Es la primera candidata a subir si el piloto lo confirma.
 
-**Story Points** (1, 2, 3, 5, 8, 13). Estima en relación con una historia de referencia que ya conoces,
-por ejemplo: "Mensaje fuera de horario" = 2 puntos. Las historias ya hechas pueden quedar sin puntos o
-con una estimación retroactiva.
+Las historias hechas tienen prioridad Medium y puntos estimados de forma retroactiva, para mostrar la
+velocidad real del proyecto.
 
-Revisa también los criterios de aceptación con `[COMPLETAR]`: reemplaza el texto entre corchetes por tu
-criterio y borra la marca.
-
-## 2. Importa en Jira
+## Importar en Jira
 
 Los nombres de los menús pueden variar levemente según la versión de Jira Cloud.
 
@@ -57,10 +80,16 @@ Los nombres de los menús pueden variar levemente según la versión de Jira Clo
 
 5. Revisa la vista previa y confirma. Comprueba que cada historia aparezca bajo su épica.
 
-## 3. Organiza los sprints
+## Plan de sprints (2 semanas cada uno)
 
-- **Sprint 0 (cerrado):** las 16 historias hechas. Muestra la velocidad real del proyecto.
-- **Sprint 1:** las historias pendientes de mayor puntaje RICE que quepan en 2 semanas.
-- Agrega un **objetivo de sprint** de una línea, por ejemplo: "Bajar la latencia p90 a la meta sin perder exactitud del router".
+| Sprint | Objetivo | Historias | Puntos |
+|---|---|---|---|
+| 0 (cerrado) | MVP en producción con evaluación y observabilidad | Las 16 historias hechas | 74 |
+| 1 | Medir el producto y cumplir la meta de latencia | Dashboard de KPIs · Reducir la latencia del router · Calibrar el juez · Casos de Atención a Clientes | 13 |
+| 2 | Preparar el piloto con clientes | Migrar a Vertex AI · Eventos de producción hacia BigQuery · Encuesta de satisfacción · Mensaje de bienvenida | 17 |
+| 3 | Integraciones reales | Conectar VTEX real · Acuerdo de servicio · Aviso de cierre de caso | 18 |
+
+El resto (botones y listas, bandeja de tickets, mensajes fuera de horario, varias preguntas, plantillas)
+se repriorizan con los datos del piloto.
 
 Toma una captura del backlog y del tablero, y agrégala a `docs/product/` para el portafolio.
