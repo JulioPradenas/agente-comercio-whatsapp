@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # botón "Run workflow" en GitHub
+
+jobs:
+  # En cada push: gratis, en segundos y sin secretos.
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.13"
+      - name: Instalar dependencias (versiones exactas de uv.lock)
+        run: uv sync --frozen
+      - name: Validar datos sintéticos
+        run: uv run python data/validate.py
+      - name: Tests unitarios
+        run: uv run pytest -q
+
+  # En Pull Requests y a pedido: llama al LLM (~150 requests) y consume cuota.
+  # Bloquea el merge si la ruta, las tools o la fidelidad bajan del umbral.
+  agent-eval:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.13"
+      - run: uv sync --frozen
+      - name: Evaluación del agente (golden set + LLM-as-judge)
+        run: uv run python -m evals.agent_eval
+      - name: Guardar reporte
+        if: always() # también si la evaluación falló: es cuando más se necesita el detalle
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-eval-report
+          path: |
+            evals/report.md
+            evals/results.csv

@@ -56,15 +56,22 @@ def run_subagent(state: ConversationState, intent: str) -> dict:
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
         temperature=0.2,
     )
+    # FAQ responde solo desde las políticas: en su primera ronda se OBLIGA a llamar una herramienta.
+    # Instrucciones como "llama SIEMPRE a search_policies" no bastaron (caso faq-07 de la evaluación).
+    first_round_config = config
+    if intent == "faq":
+        first_round_config = config.model_copy(
+            update={"tool_config": types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="ANY"))}
+        )
 
     contents = render_history(state["messages"])
     new_messages: list[Message] = []
     guard_retried = False  # el guardrail de salida permite UN reintento corregido
     guard_failed = False
 
-    for _ in range(MAX_TOOL_ROUNDS):
+    for round_number in range(MAX_TOOL_ROUNDS):
         try:
-            response = generate(contents, config)
+            response = generate(contents, first_round_config if round_number == 0 else config)
         except RuntimeError:
             # Todos los modelos caídos: se deriva en vez de dejar al cliente sin respuesta.
             escalation = {"trigger": "system_failure", "reason": "Asistente no disponible (proveedor LLM)"}

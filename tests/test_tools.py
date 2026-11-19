@@ -3,10 +3,12 @@
 search_products y search_policies no se testean aquí: dependen de Supabase y Gemini.
 """
 
+from datetime import date
+
 import pytest
 
 from agent.commerce_client import CommerceClient
-from agent.tools import CommerceTools, format_clp
+from agent.tools import CommerceTools, delivery_timing, format_clp
 
 OWNER_PHONE = "56989910085"  # dueño del pedido 1011 (entregado hace 8 días)
 
@@ -93,3 +95,33 @@ def test_product_type_is_an_enum_for_the_llm(tools):
     search = next(d for d in tools.declarations() if d.name == "search_products")
     product_type = search.parameters_json_schema["properties"]["product_type"]
     assert "Refrigerador" in product_type["anyOf"][0]["enum"]
+
+
+# --- Atraso calculado en código (caso edge-01 de la evaluación) ---
+
+
+TODAY = date(2026, 11, 20)  # viernes
+
+
+def test_order_before_estimate_is_on_time():
+    assert delivery_timing("handling", "2026-11-24", TODAY).startswith("dentro del plazo")
+
+
+def test_order_late_within_margin_does_not_escalate():
+    # Estimado el martes 18; hoy viernes 20 -> 2 días hábiles de atraso: aún no se deriva.
+    assert "no corresponde derivar" in delivery_timing("invoiced", "2026-11-18", TODAY)
+
+
+def test_order_late_beyond_margin_escalates():
+    # Estimado el viernes 13; hoy viernes 20 -> 5 días hábiles.
+    assert "corresponde derivar" in delivery_timing("invoiced", "2026-11-13", TODAY)
+    assert "no corresponde" not in delivery_timing("invoiced", "2026-11-13", TODAY)
+
+
+def test_delivered_orders_have_no_timing():
+    assert delivery_timing("delivered", "2026-11-13", TODAY) is None
+
+
+def test_list_my_orders_includes_products(tools):
+    orders = tools.list_my_orders()["orders"]
+    assert all(order["products"] for order in orders)

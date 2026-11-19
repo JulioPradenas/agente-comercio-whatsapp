@@ -116,6 +116,22 @@ en pausa para ese cliente hasta que el ejecutivo cierra el caso.
 uv run python -m evals.router_eval   # exactitud del router sobre evals/golden_set.jsonl (30 casos)
 ```
 
+### Evaluación del agente completo (CI)
+
+```bash
+uv run python -m evals.agent_eval   # golden set de punta a punta + LLM-as-judge; genera evals/report.md
+```
+
+| Métrica | Resultado | Umbral (falla el CI) |
+|---|---|---|
+| Ruta correcta | 100% | ≥ 90% |
+| Tools esperadas | 100% | ≥ 90% |
+| Derivaciones indebidas | 0 | - |
+| Relevancia / Fidelidad / Tono (juez, 1-5) | 4,97 / 5,00 / 4,83 | Fidelidad ≥ 4,0 |
+
+GitHub Actions corre los tests unitarios en cada push y la evaluación completa en cada Pull Request
+(consume cuota del LLM). El juez usa un modelo distinto al del agente para reducir el sesgo de autopreferencia.
+
 ## Despliegue (Render, plan gratuito)
 
 Un solo servicio Docker (`server.py`) con el webhook y la API de comercio montada en `/commerce`.

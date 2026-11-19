@@ -4,6 +4,8 @@ Es el único módulo que conoce las rutas de VTEX: para usar VTEX real basta cam
 COMMERCE_API_URL y las credenciales.
 """
 
+from datetime import date
+
 import httpx
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,6 +16,8 @@ class ClientSettings(BaseSettings):
     app_key: str = "hogartec-dev-key"
     app_token: str = "hogartec-dev-token"
     store_url: str = "https://hogartec.example"
+    # "Hoy" para calcular atrasos: el mismo COMMERCE_TODAY que usa la API (datos congelados al 20-nov-2026).
+    today: date = date(2026, 11, 20)
 
 
 class CommerceError(Exception):

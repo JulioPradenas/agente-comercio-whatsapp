@@ -1,5 +1,6 @@
 """Creación y cierre de tickets de derivación a un ejecutivo."""
 
+import os
 import uuid
 from typing import Literal
 
@@ -30,6 +31,9 @@ def build_summary(messages: list[Message], reason: str) -> str:
 
 
 def create_ticket(phone: str, trigger: Trigger, reason: str, messages: list[Message]) -> str:
+    # En evaluaciones no se escriben tickets: ensuciarían la bandeja de los ejecutivos y los KPIs.
+    if os.environ.get("HANDOFF_DRY_RUN") == "1":
+        return f"HT-DRYRUN-{trigger}"
     ticket_id = f"HT-{uuid.uuid4().hex[:6].upper()}"
     with get_connection() as conn:
         conn.execute(

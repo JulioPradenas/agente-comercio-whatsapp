@@ -8,8 +8,10 @@ Principios:
 """
 
 from collections.abc import Callable
+from datetime import date
 from typing import Literal
 
+import numpy as np
 from google.genai import types
 
 from agent.commerce_client import CommerceClient, CommerceError
@@ -25,7 +27,10 @@ ERROR_GUIDANCE = {
     "ORDER_NOT_FOUND": "No existe un pedido con ese número asociado a este teléfono. Pide que revise el número.",
     "ORDER_NOT_OWNED": "No existe un pedido con ese número asociado a este teléfono. Pide que revise el número.",
     "SKU_NOT_IN_ORDER": "Ese producto no está en el pedido. Pregunta cuál producto quiere devolver.",
-    "ORDER_NOT_DELIVERED": "Solo se pueden devolver pedidos entregados. Si aún no se despacha, ofrece cancelarlo.",
+    "ORDER_NOT_DELIVERED": (
+        "El pedido aún no se entrega: no aplica devolución. Si todavía no fue despachado, se puede cancelar sin costo: "
+        "explícaselo y, si el cliente confirma, usa escalate_to_human para que un ejecutivo procese la cancelación."
+    ),
     "RETURN_WINDOW_EXPIRED": "Pasó el plazo de retracto de 10 días. Si el producto tiene falla, aplica la garantía legal.",
     "HYGIENE_PRODUCT": "Los audífonos in-ear abiertos no aplican para retracto. Si tienen falla, aplica la garantía.",
     "RETURN_ALREADY_REQUESTED": "Ya existe una solicitud de devolución para ese producto.",
@@ -38,6 +43,20 @@ def format_clp(pesos: int) -> str:
 
 def cents_to_pesos(cents: int) -> int:
     return cents // 100
+
+
+def delivery_timing(status: str, estimated_delivery: str, today: date) -> str | None:
+    """Dice en palabras si un pedido en curso está dentro del plazo o atrasado (en días hábiles).
+    La política deriva a un ejecutivo solo si el atraso supera 2 días hábiles."""
+    if status in {"delivered", "canceled"}:
+        return None
+    estimated = date.fromisoformat(estimated_delivery)
+    if today <= estimated:
+        return f"dentro del plazo: llega a más tardar el {estimated.isoformat()}"
+    late_days = int(np.busday_count(estimated, today))
+    if late_days > 2:
+        return f"atrasado {late_days} días hábiles: supera el margen de 2 días hábiles, corresponde derivar"
+    return f"atrasado {late_days} días hábiles: aún dentro del margen de 2 días hábiles, no corresponde derivar"
 
 
 class CommerceTools:
@@ -131,20 +150,25 @@ class CommerceTools:
     # --- Postventa ---
 
     def list_my_orders(self) -> dict:
-        """Lista los últimos pedidos del cliente que escribe. Usar cuando pregunta por 'mi pedido' sin dar
-        el número."""
+        """Lista los últimos pedidos del cliente que escribe, con sus productos. Usar cuando pregunta por
+        'mi pedido' sin dar el número, o se refiere a un pedido por su fecha ('el de ayer') o por un
+        producto ('los audífonos que compré')."""
         result = self.client.list_orders(self.customer_phone)
-        return {
-            "orders": [
+        orders = []
+        for order in result["list"]:
+            # El listado del OMS no trae productos: sin ellos, el agente tenía que abrir pedido por pedido
+            # para encontrar "los audífonos" y agotaba sus rondas (caso post-03 de la evaluación).
+            detail = self.client.get_order(order["orderId"])
+            orders.append(
                 {
                     "order_id": order["orderId"],
                     "date": order["creationDate"][:10],
                     "status": order["statusDescription"],
+                    "products": [item["name"] for item in detail["items"]],
                     "total": format_clp(cents_to_pesos(order["totalValue"])),
                 }
-                for order in result["list"]
-            ]
-        }
+            )
+        return {"today": self.client.settings.today.isoformat(), "orders": orders}
 
     def get_order_status(self, order_id: str) -> dict:
         """Consulta el estado, la fecha estimada de entrega y los productos de un pedido del cliente por su
@@ -165,6 +189,8 @@ class CommerceTools:
             "status": order["statusDescription"],
             "order_date": order["creationDate"][:10],
             "estimated_delivery": logistics["shippingEstimateDate"],
+            # Calculado en código: el LLM no sabe qué día es hoy ni cuenta bien días hábiles (caso edge-01).
+            "delivery_timing": delivery_timing(order["status"], logistics["shippingEstimateDate"], self.client.settings.today),
             "delivered_at": logistics["deliveredDate"][:10] if logistics["deliveredDate"] else None,
             "items": [{"sku": item["id"], "name": item["name"], "quantity": item["quantity"]} for item in order["items"]],
             "total": format_clp(cents_to_pesos(order["value"])),
