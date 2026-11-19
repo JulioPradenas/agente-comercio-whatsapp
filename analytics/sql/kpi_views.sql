@@ -50,8 +50,9 @@ WITH daily AS (
 SELECT
     conversation_date,
     COUNT(*) AS conversations,
-    COUNTIF(resolved) AS resolved_conversations,
-    COUNTIF(handed_off) AS handed_off_conversations,
+    -- NULLIF: un día sin derivaciones devuelve NULL y no 0, así el gráfico apilado no dibuja la etiqueta "0".
+    NULLIF(COUNTIF(resolved), 0) AS resolved_conversations,
+    NULLIF(COUNTIF(handed_off), 0) AS handed_off_conversations,
     ROUND(AVG(CAST(resolved AS INT64)), 3) AS containment_rate,
     COUNTIF(converted) AS conversions,
     ROUND(SUM(cost_usd), 5) AS cost_usd
@@ -65,6 +66,10 @@ SELECT
     COUNT(*) AS conversations,
     ROUND(AVG(CAST(resolved AS INT64)), 3) AS containment_rate,
     ROUND(AVG(CAST(handed_off AS INT64)), 3) AS handoff_rate,
+    -- Versiones para gráficos apilados: NULL en vez de 0 evita etiquetas "0%" sobre segmentos de ancho cero.
+    -- La tabla usa containment_rate y handoff_rate, que sí deben mostrar 0,0%.
+    NULLIF(ROUND(AVG(CAST(resolved AS INT64)), 3), 0) AS containment_rate_chart,
+    NULLIF(ROUND(AVG(CAST(handed_off AS INT64)), 3), 0) AS handoff_rate_chart,
     ROUND(AVG(cost_usd), 5) AS cost_per_conversation_usd,
     ROUND(AVG(avg_latency_s), 1) AS avg_latency_s
 FROM `{dataset}.conversations`
