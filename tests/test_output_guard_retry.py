@@ -77,3 +77,26 @@ def test_rejected_draft_is_not_stored(scripted_llm):
     result = run(HISTORY)
     stored = [message["text"] for message in result["messages"] if message["role"] == "assistant"]
     assert stored == ["Cuesta $269.990."]  # el borrador con el precio inventado no queda en la memoria
+
+
+def test_usage_meter_counts_only_inside_its_block():
+    from agent.metering import UsageMeter, record_usage
+
+    record_usage(100, 10, 0.5)  # sin medidor activo: se ignora
+    with UsageMeter() as meter:
+        record_usage(1_000, 50, 0.001)
+        record_usage(2_000, 70, 0.002)
+    record_usage(100, 10, 0.5)  # después del bloque: se ignora
+    assert (meter.calls, meter.input_tokens, meter.output_tokens) == (2, 3_000, 120)
+    assert round(meter.cost_usd, 6) == 0.003
+
+
+def test_nested_meters_with_equal_counts():
+    # Regresión: con igualdad por valor, salir del medidor interno sacaba al externo de la lista.
+    from agent.metering import UsageMeter, record_usage
+
+    with UsageMeter() as conversation:
+        with UsageMeter() as turn:
+            record_usage(10, 1, 0.1)
+        record_usage(10, 1, 0.1)
+    assert turn.calls == 1 and conversation.calls == 2

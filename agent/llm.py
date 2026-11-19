@@ -6,6 +6,7 @@ from google import genai
 from google.genai import errors, types
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from agent.metering import record_usage
 from agent.observability import cost_details, get_client, observe
 
 
@@ -37,11 +38,13 @@ def record_generation(model: str, response: types.GenerateContentResponse, used_
     input_tokens = (usage.prompt_token_count or 0) if usage else 0
     output_tokens = ((usage.candidates_token_count or 0) + (usage.thoughts_token_count or 0)) if usage else 0
     calls = [call.name for call in response.function_calls or []]
+    costs = cost_details(model, input_tokens, output_tokens)
+    record_usage(input_tokens, output_tokens, costs["total"])
     get_client().update_current_generation(
         model=model,
         output={"function_calls": calls} if calls else response.text,
         usage_details={"input": input_tokens, "output": output_tokens},
-        cost_details=cost_details(model, input_tokens, output_tokens),
+        cost_details=costs,
         metadata={"used_fallback": used_fallback},
     )
 
